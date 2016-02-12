@@ -8,8 +8,8 @@ Last updated February 2016
 by Trevor Arp
 '''
 import numpy as np
-from os.path import exists, isfile
-from utils import indexof, get_locals
+from os.path import exists, isfile, join
+from utils import indexof, get_locals, find_run
 from timeit import default_timer as timer
 import datetime
 
@@ -34,27 +34,23 @@ Takes a run number and loads the run including the reflection image, the photocu
 $directory is the directory, either absolute path to the directory or the subdirectory within datadir
 '''
 def load_run(run_num, directory=''):
-    # Find the file
-    if exists(run_num + '_log.log' ):
+    # First find the file
+    if exists(run_num + '_log.log'):
         path = run_num
-    elif exists(directory + '\\' + run_num + '_log.log'):
-        path = directory + '\\' + run_num
-    elif exists(datadir + run_num + '_log.log'):
-        path = datadir + run_num
-    elif exists(datadir + directory + '\\' + run_num + '_log.log'):
-        path = datadir  + directory + '\\' + run_num
+    elif find_run(directory, run_num) is not None:
+        path = find_run(directory, run_num)
+    elif find_run(datadir, run_num) is not None:
+        path = find_run(datadir, run_num)
     else:
-        print directory + '\\' + run_num + '_log.log'
-        print exists(directory + '\\' + run_num + '_log.log' )
-        print 'Error dimage.load_run : Could not open files'
+        print 'Error load_run : Could not open files'
         raise IOError
-        #
-
-    f = open(path+'_log.log', 'r').readlines()
+    #
+    file_path = join(path, run_num)
+    f = open(file_path + '_log.log', 'r').readlines()
 
     # For backwards compatability
     if f[0] == "##### Scan Paramters #####\n":
-        log, data = old_load_run(run_num, directory=directory)
+        log, data = old_load_run(run_num, directory=path)
         return log, data
 
     # Load the log file
@@ -82,10 +78,10 @@ def load_run(run_num, directory=''):
     types = log['Data Files']
     types = types.split(',')
     for s in types:
-        if exists(path + '_' + s +'.dat'):
-            data[s] = np.loadtxt(path + '_' + s +'.dat')
-        elif exists(path + '_' + s +'.npy'):
-            data[s] = np.load(path + '_' + s +'.npy')
+        if exists(file_path + '_' + s +'.dat'):
+            data[s] = np.loadtxt(file_path + '_' + s +'.dat')
+        elif exists(file_path + '_' + s +'.npy'):
+            data[s] = np.load(file_path + '_' + s +'.npy')
         else:
             "Error in load_run: Cannot find data file for filetype: " + str(s)
             raise IOError
@@ -100,12 +96,8 @@ def old_load_run(run_num, directory=''):
     # Find the file
     if exists(run_num + '_log.log' ):
         path = run_num
-    elif exists(directory + '\\' + run_num + '_log.log'):
-        path = directory + '\\' + run_num
-    elif exists(datadir + run_num + '_log.log'):
-        path = datadir + run_num
-    elif exists(datadir + directory + '\\' + run_num + '_log.log'):
-        path = datadir  + directory + '\\' + run_num
+    elif exists(join(directory, run_num + '_log.log')):
+        path = join(directory, run_num)
     else:
         print directory + '\\' + run_num + '_log.log'
         print exists(directory + '\\' + run_num + '_log.log' )

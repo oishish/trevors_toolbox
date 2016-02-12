@@ -14,6 +14,7 @@ from scipy.ndimage.interpolation import shift
 from os.path import abspath as OS_abspath
 from os.path import dirname as OS_dirname
 from os.path import exists as OS_exists
+from os.path import join
 
 '''
 Searches $list and returns the index of $item. Returns -1 if it can't find it.
@@ -62,3 +63,32 @@ def get_locals():
 	else:
 		print "Error get_locals(): No local variables file"
 #end get_locals
+
+'''
+Finds a data file by searching based on the date in the runnum, searches by looking for a log file
+with the given run number
+
+$directory is the directory to search in, $rn is the run number
+
+returns the path to the directory that the files are in, or None if nothing is found
+'''
+def find_run(directory, rn):
+	path = directory
+	s = rn.split('_')
+	if OS_exists(join(path, rn + '_log.log')):
+		return path
+	else:
+		path = join(path, s[0])
+	if OS_exists(join(path, rn + '_log.log')):
+		return path
+	else:
+		path = join(path, s[0] + '_' + s[1])
+	if OS_exists(join(path, rn + '_log.log')):
+		return path
+	else:
+		path = join(path, s[0] + '_' + s[1] + '_' + s[2])
+	if OS_exists(join(path, rn + '_log.log')):
+		return path
+	else:
+		return None
+# end find_run
