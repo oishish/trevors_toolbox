@@ -21,6 +21,9 @@ Generally Usefull Modules
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
+from os.path import abspath as OS_abspath
+from os.path import dirname as OS_dirname
+from os.path import exists as OS_exists
 
 '''
 Utilities module contains commonly used general purpose functions.
@@ -72,7 +75,10 @@ import postprocess
 '''
 Default file values, machine specific
 '''
-from defaults import *
+LOCALS_dir_path = OS_dirname(OS_abspath(__file__))
+if OS_exists(LOCALS_dir_path + '\locals.txt'):
+    execfile(LOCALS_dir_path + '\locals.txt')
+
 
 '''
 A object for plotting a data image, takes a run number and plots
