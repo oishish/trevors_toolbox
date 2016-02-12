@@ -7,8 +7,12 @@ Last updated February 2016
 
 by Trevor Arp
 '''
-from defaults import *
 import numpy as np
+from utils import get_locals
+
+local_values = get_locals()
+InGaAs_calibration_file = local_values['InGaAs_calibration_file']
+
 '''
 Calibrates data by dividing by the responsivity for a single given parameter
 

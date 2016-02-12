@@ -9,7 +9,7 @@ by Trevor Arp
 '''
 import numpy as np
 from os.path import exists, isfile
-from utils import indexof
+from utils import indexof, get_locals
 from timeit import default_timer as timer
 import datetime
 
@@ -20,7 +20,8 @@ from fitting import lowpass
 
 from calibration import calib_response
 
-from defaults import *
+local_values = get_locals()
+datadir = local_values['datadir']
 
 '''
 Takes a run number and loads the run including the reflection image, the photocurrent image
