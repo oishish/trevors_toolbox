@@ -11,6 +11,10 @@ by Trevor Arp
 import numpy as np
 from scipy.ndimage.interpolation import shift
 
+from os.path import abspath as OS_abspath
+from os.path import dirname as OS_dirname
+from os.path import exists as OS_exists
+
 '''
 Searches $list and returns the index of $item. Returns -1 if it can't find it.
 Compares as strings
@@ -40,3 +44,21 @@ def offset_rows(data, offset):
             c.append(j)
     return np.delete(data,c, axis=1)
 # end offset rows
+
+'''
+Gets the macheine specific values of local, returns a dictionary
+'''
+def get_locals():
+	LOCALS_dir_path = OS_dirname(OS_abspath(__file__))
+	if OS_exists(LOCALS_dir_path + '\locals.txt'):
+		f = open(LOCALS_dir_path + '\locals.txt')
+		out = {}
+		for line in f:
+			k, v = line.split('=')
+			k = k.strip()
+			v = v.strip()
+			out[k] = v
+		return out
+	else:
+		print "Error get_locals(): No local variables file"
+#end get_locals

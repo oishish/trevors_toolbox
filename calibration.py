@@ -8,13 +8,11 @@ Last updated February 2016
 by Trevor Arp
 '''
 import numpy as np
+from utils import get_locals
 
-from os.path import abspath as OS_abspath
-from os.path import dirname as OS_dirname
-from os.path import exists as OS_exists
-LOCALS_dir_path = OS_dirname(OS_abspath(__file__))
-if OS_exists(LOCALS_dir_path + '\locals.txt'):
-    execfile(LOCALS_dir_path + '\locals.txt')
+local_values = get_locals()
+InGaAs_calibration_file = local_values['InGaAs_calibration_file']
+
 '''
 Calibrates data by dividing by the responsivity for a single given parameter
 
