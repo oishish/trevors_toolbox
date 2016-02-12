@@ -7,8 +7,14 @@ Last updated February 2016
 
 by Trevor Arp
 '''
-from defaults import *
 import numpy as np
+
+from os.path import abspath as OS_abspath
+from os.path import dirname as OS_dirname
+from os.path import exists as OS_exists
+LOCALS_dir_path = OS_dirname(OS_abspath(__file__))
+if OS_exists(LOCALS_dir_path + '\locals.txt'):
+    execfile(LOCALS_dir_path + '\locals.txt')
 '''
 Calibrates data by dividing by the responsivity for a single given parameter
 
