@@ -66,7 +66,7 @@ def get_locals():
 
 '''
 Finds a data file by searching based on the date in the runnum, searches by looking for a log file
-with the given run number
+with the given run number.
 
 $directory is the directory to search in, $rn is the run number
 
