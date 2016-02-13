@@ -36,7 +36,7 @@ $directory is the directory, either absolute path to the directory or the subdir
 def load_run(run_num, directory=''):
     # First find the file
     if exists(run_num + '_log.log'):
-        path = run_num
+        path = ''
     elif find_run(directory, run_num) is not None:
         path = find_run(directory, run_num)
     elif find_run(datadir, run_num) is not None:
@@ -99,8 +99,6 @@ def old_load_run(run_num, directory=''):
     elif exists(join(directory, run_num + '_log.log')):
         path = join(directory, run_num)
     else:
-        print directory + '\\' + run_num + '_log.log'
-        print exists(directory + '\\' + run_num + '_log.log' )
         print 'Error dimage.load_run : Could not open files'
         raise IOError
         #
@@ -358,11 +356,11 @@ def Space_Power_Cube(run,
         power[:,i] = geometric_calib[0]*power[:,i] + geometric_calib[1]
 
     # If it hasn't already been saved to the savefile
-    condition = savefile is not None and exists(savefile + rn + "_fitpci.npy")
-    condition = condition and exists(savefile + rn + "_fitrfi.npy")
+    condition = savefile is not None and exists(join(savefile, rn+"_fitpci.npy"))
+    condition = condition and exists(join(savefile, rn+"_fitrfi.npy"))
     if condition:
-        fit_drR = np.load(savefile + rn + "_fitrfi.npy")
-        fit_pci = np.load(savefile + rn + "_fitpci.npy")
+        fit_drR = np.load(join(savefile, rn + "_fitrfi.npy"))
+        fit_pci = np.load(join(savefile, rn + "_fitpci.npy"))
     else:
         if display:
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
@@ -384,7 +382,7 @@ def Space_Power_Cube(run,
             dt = tf-t0
             print "Processing Completed in: " + str(datetime.timedelta(seconds=dt))
         if savefile is not None:
-            np.save(savefile + rn + "_fitpci.npy", fit_pci)
-            np.save(savefile + rn + "_fitrfi.npy", fit_drR)
+            np.save(join(savefile, rn + "_fitpci.npy"), fit_pci)
+            np.save(join(savefile, rn + "_fitrfi.npy"), fit_drR)
     return power, drR, d, fit_drR, fit_pci
 # end fit_power_cube

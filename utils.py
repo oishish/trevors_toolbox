@@ -51,8 +51,8 @@ Gets the macheine specific values of local, returns a dictionary
 '''
 def get_locals():
 	LOCALS_dir_path = OS_dirname(OS_abspath(__file__))
-	if OS_exists(LOCALS_dir_path + '\locals.txt'):
-		f = open(LOCALS_dir_path + '\locals.txt')
+	if OS_exists(join(LOCALS_dir_path, 'locals.txt')):
+		f = open(join(LOCALS_dir_path, 'locals.txt'))
 		out = {}
 		for line in f:
 			k, v = line.split('=')
