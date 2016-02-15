@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from matplotlib.widgets import Slider
 from time import sleep
 from os import getcwd as cwd
 
@@ -128,46 +129,52 @@ $d is the data cube to be displayed.
 CubeFigure.ax gives the axes for manipulation
 '''
 class CubeFigure(object):
-    def __init__(self, d):
-        self.d = d
+	def __init__(self, d):
+		self.d = d
 
-        rows, cols, N = self.d.shape
-        self.N = N
+		rows, cols, N = self.d.shape
+		self.N = N
 
-        self.fig = plt.figure()
-        self.ax = self.fig.gca()
+		self.fig = plt.figure()
+		self.ax = self.fig.gca()
 
-        self.ix = 0
-        self.img = self.ax.imshow(self.d[:,:,self.ix], cmap=get_viridis())
-        self.cbar = self.fig.colorbar(self.img)
+		self.ix = 1
+		self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=get_viridis())
+		self.cbar = self.fig.colorbar(self.img)
 
-        self.sliderax = self.fig.add_axes([0.2, 0.02, 0.6, 0.03])
-        self.slider = Slider(self.sliderax, 'Scan', 0, N, valinit=1)
-        self.slider.on_changed(self.update)
-        self.slider.drawon = False
+		self.sliderax = self.fig.add_axes([0.2, 0.02, 0.6, 0.03])
+		self.slider = Slider(self.sliderax, 'Scan', 1, N, valinit=1)
+		self.slider.on_changed(self.update_val)
+		self.slider.drawon = False
 
-        self.slider.valtext.set_text('{}'.format(int(0.0))+'/'+str(self.N))
+		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
 
-        self.fig.canvas.mpl_connect('key_press_event', self.onKey)
-        self.fig.show()
-    # end init
+		self.fig.canvas.mpl_connect('key_press_event', self.onKey)
+		self.fig.show()
+	# end init
 
-    def onKey(self, event):
-        k = event.key
-        if (k == 'right' or k == 'up') and self.ix < self.N:
-            val = self.ix + 1
-            self.slider.set_val(val)
-            self.update(val)
-        elif (k == 'left' or k == 'down') and self.ix > 0:
-            val = self.ix - 1
-            self.slider.set_val(val)
-            self.update(val)
+	def onKey(self, event):
+		k = event.key
+		if (k == 'right' or k == 'up') and self.ix < self.N:
+			val = self.ix + 1
+			self.slider.set_val(val)
+			self.update_val(val)
+		elif (k == 'left' or k == 'down') and self.ix > 1:
+			val = self.ix - 1
+			self.slider.set_val(val)
+			self.update_val(val)
+		#
+	# end onKey
 
-    def update(self, value):
-        self.ix = int(value)
-        self.img.set_data(self.d[:,:,self.ix-1])
-        self.img.autoscale()
-        self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
-        self.fig.canvas.draw()
-    # end update
+	def update_val(self, value):
+		self.ix = int(value)
+		self.img.set_data(self.d[:,:,self.ix-1])
+		self.img.autoscale()
+		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
+		self.update()
+	# end update_val
+
+	def update(self):
+		self.fig.canvas.draw()
+	# end update
 # end CubeFigure
