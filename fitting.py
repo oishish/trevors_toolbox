@@ -212,32 +212,30 @@ def normfft(d):
 # end normfft
 
 '''
-Takes a two dimensional array of data $z and fits it to some function $func where func is
-define such that data = func(x, y, *args) where x and y come from $x and $y which have lengths
-N and M for an MxN array. $p0 is the initial parameters
+Takes a two dimensional array of data $data and fits it to some function $func where func is
+define such that data = func(X, *args) where x = X[0,:], y = X[1,:], the parameters $x and $y
+define the ranges over which the coordinates range for data, i.e. $data = func(($x, $y), *p0)
+
+$p0 is the initial parameters
 
 returns the parameters array and covariance matrix output from scipy.optimize.curve_fit
 '''
 def fit_2D(func, x, y, data, p0):
-    def flat_func(X, *args):
-        # argx = args[0][:,0]
-        # argy = args[0][:,1]
-        # args.remove(args[0])
-        # return func(argx, argy, *args)
-        return func(X[:,0], X[:,1], *args)
-    #
-    N = len(x)
-    M = len(y)
+    M = len(x)
+    N = len(y)
     if (N,M) != data.shape:
         print "Error fit_2D: $x and $y must have lengths N and M for an MxN data array"
         raise ValueError
-    coords = np.zeros(2, N*M)
+    coords = np.zeros((2, N*M))
+    x_m = np.zeros((N,M))
+    y_m = np.zeros((N,M))
+    for i in range(M):
+        x_m[i,:] = x
     for i in range(N):
-        for j in range(M):
-            coords[i*N+j,0] = x[i]
-            coords[i*N+j,1] = y[j]
-    return coords # for TESTING
-    #return fit(flat_func, coords, data.flatten(), p0=p0)
+        y_m[:,i] = y
+    coords[0] = x_m.flatten()
+    coords[1] = y_m.flatten()
+    return fit(func, coords, data.flatten(), p0=p0)
 # end fit_2D
 
 '''
@@ -265,14 +263,13 @@ def compute_shift(d1, d2):
     x = np.linspace(0, M, M)
     y = np.linspace(0, N, N)
     l = int(rows/5.0)
-    X = np.array([x[M-l:M+l], y[N-l:N+l]])
     Z = ac[N-l:N+l, M-l:M+l]
     try:
-        p, pcorr = fit(guass2D, X, Z, p0=(np.max(ac), mx[1], 1.0, mx[0], 1.0))
+        p, pcorr = fit_2D(guass2D, x[M-l:M+l], y[N-l:N+l], Z, (np.max(ac), mx[1], 1.0, mx[0], 1.0))
     except Exception as e:
         print "Error fitting.exact_arg_max: Could not fit autocorrlation to a guassian"
         print str(e)
         raise
-    sft = (p[3]-rows+1, p[1]-cols+1)
+    sft = (-p[3]+rows-1, -p[1]+cols-1)
     return sft
 # end compute_shift

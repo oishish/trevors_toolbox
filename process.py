@@ -12,11 +12,12 @@ from os.path import exists, isfile, join
 from utils import indexof, get_locals, find_run
 from timeit import default_timer as timer
 import datetime
+from scipy.ndimage.interpolation import shift as ndshift
 
 from fitting import power_law_fit
 from fitting import symm_exponential_fit as get_delay_single_fit
 from fitting import double_exponential_fit as get_delay_double_fit
-from fitting import lowpass
+from fitting import lowpass, compute_shift
 
 from calibration import calib_response
 
@@ -318,6 +319,8 @@ $backgnd is the background area for Delta R over R, same spec as in the compute_
 
 $default and $default_err are the values to default to if the fitting routine fails.
 
+$stabalize determines whether to stablize the image against drift in the galvos, time-intensive.
+
 $display When processing timing info is printed to terminal
 
 Returns:
@@ -331,38 +334,60 @@ def Space_Power_Cube(run,
     backgnd=None,
     default=(-1,-1,-1),
     err_default=(-1,-1,-1.0),
+    stabalize=True,
     display=True ):
+
     log = run.log
     rn = log['Run Number']
-    gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
-    d = run.pci*(gain*1.0e9)
-    p = run.pow
-    wavelength = round(run.log['Wavelength'])
-    rows, cols, N = d.shape
-    power = np.zeros((rows,N))
-
-    # Compute delta R over R
-    r = run.rfi
-    drR = np.zeros((rows,cols, N))
-    for i in range(N):
-        drR[:,:,i] = compute_drR(r[:,:,i], backgnd)
-
-    # Average Power
-    for i in range(N):
-        for j in range(rows):
-            power[j, i] = np.mean(p[j,:,i])
-        # Calibrate
-        power[:,i] = calib_response(power[:,i], wavelength)
-        power[:,i] = geometric_calib[0]*power[:,i] + geometric_calib[1]
 
     # If it hasn't already been saved to the savefile
-    condition = savefile is not None and exists(join(savefile, rn+"_fitpci.npy"))
-    condition = condition and exists(join(savefile, rn+"_fitrfi.npy"))
-    if condition:
-        fit_drR = np.load(join(savefile, rn + "_fitrfi.npy"))
-        fit_pci = np.load(join(savefile, rn + "_fitpci.npy"))
+    if savefile is not None and exists(join(savefile, rn+"_processed.npz")):
+        files = np.load(join(savefile, rn+"_processed.npz"))
+        power = files['power']
+        drR = files['drR']
+        d = files['d']
+        fit_drR = files['fit_drR']
+        fit_pci = files['fit_pci']
     else:
+        gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+        d = run.pci*(gain*1.0e9)
+        p = run.pow
+        wavelength = round(run.log['Wavelength'])
+        rows, cols, N = d.shape
+        power = np.zeros((rows,N))
+
         if display:
+            print "Loading Images for run: " + str(rn)
+
+        # Compute delta R over R
+        r = run.rfi
+        drR = np.zeros((rows,cols, N))
+        for i in range(N):
+            drR[:,:,i] = compute_drR(r[:,:,i], backgnd)
+        #
+
+        # Average Power
+        for i in range(N):
+            for j in range(rows):
+                power[j, i] = np.mean(p[j,:,i])
+            # Calibrate
+            power[:,i] = calib_response(power[:,i], wavelength)
+            power[:,i] = geometric_calib[0]*power[:,i] + geometric_calib[1]
+        #
+
+        # Stablize the images
+        if stabalize:
+            if display:
+                print "Stablizing images"
+            for i in range(N-2, -1,-1):
+                sft = compute_shift(d[:,:,i], d[:,:,N-1])
+                d[:,:,i] = ndshift(d[:,:,i], sft)
+                drR[:,:,i] = ndshift(drR[:,:,i], sft)
+            #
+        #
+
+        if display:
+            print "Fitting Images"
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
             print "Starting Processing on " + s + " datacube"
         t0 = timer()
@@ -382,7 +407,7 @@ def Space_Power_Cube(run,
             dt = tf-t0
             print "Processing Completed in: " + str(datetime.timedelta(seconds=dt))
         if savefile is not None:
-            np.save(join(savefile, rn + "_fitpci.npy"), fit_pci)
-            np.save(join(savefile, rn + "_fitrfi.npy"), fit_drR)
+            fname = join(savefile, rn + "_processed")
+            np.savez(fname, power=power, drR=drR, d=d, fit_drR=fit_drR, fit_pci=fit_pci)
     return power, drR, d, fit_drR, fit_pci
 # end fit_power_cube
