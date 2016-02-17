@@ -21,9 +21,6 @@ from fitting import lowpass, compute_shift
 
 from calibration import calib_response
 
-local_values = get_locals()
-datadir = local_values['datadir']
-
 '''
 Takes a run number and loads the run including the reflection image, the photocurrent image
 (which may be an image or a data cube) and the contents of the log file in a dictionary.
@@ -38,10 +35,10 @@ def load_run(run_num, directory=''):
     # First find the file
     if exists(run_num + '_log.log'):
         path = ''
-    elif find_run(directory, run_num) is not None:
-        path = find_run(directory, run_num)
-    elif find_run(datadir, run_num) is not None:
-        path = find_run(datadir, run_num)
+    elif find_run(run_num, directory=directory) is not None:
+        path = find_run(run_num, directory=directory)
+    elif find_run(run_num) is not None:
+        path = find_run(run_num)
     else:
         print 'Error load_run : Could not open files'
         raise IOError

@@ -72,7 +72,10 @@ $directory is the directory to search in, $rn is the run number
 
 returns the path to the directory that the files are in, or None if nothing is found
 '''
-def find_run(directory, rn):
+def find_run(rn, directory=None):
+	if directory is None:
+		local_values = get_locals()
+		directory = local_values['datadir']
 	path = directory
 	s = rn.split('_')
 	if OS_exists(join(path, rn + '_log.log')):
