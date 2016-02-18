@@ -332,7 +332,8 @@ def Space_Power_Cube(run,
     default=(-1,-1,-1),
     err_default=(-1,-1,-1.0),
     stabalize=True,
-    display=True ):
+    display=True,
+    debug=False):
 
     log = run.log
     rn = log['Run Number']
@@ -377,9 +378,20 @@ def Space_Power_Cube(run,
             if display:
                 print "Stablizing images"
             for i in range(N-2, -1,-1):
-                sft = compute_shift(d[:,:,i], d[:,:,N-1])
-                d[:,:,i] = ndshift(d[:,:,i], sft)
-                drR[:,:,i] = ndshift(drR[:,:,i], sft)
+                if rows > 100 or cols > 100:
+                    ixr = rows/2
+                    ixc = cols/2
+                    sft = compute_shift(d[ixr-50:ixr+50,ixc-50:ixc+50,i], d[ixr-50:ixr+50,ixc-50:ixc+50,N-1])
+                    d[:,:,i] = ndshift(d[:,:,i], sft)
+                    drR[:,:,i] = ndshift(drR[:,:,i], sft)
+                    if debug:
+                        print i, sft
+                else:
+                    sft = compute_shift(d[:,:,i], d[:,:,N-1])
+                    d[:,:,i] = ndshift(d[:,:,i], sft)
+                    drR[:,:,i] = ndshift(drR[:,:,i], sft)
+                    if debug:
+                        print i, sft
             #
         #
 
