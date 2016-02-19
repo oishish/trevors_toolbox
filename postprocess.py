@@ -9,7 +9,8 @@ Last updated February 2016
 
 by Trevor Arp
 '''
-from toolbox import *
+import numpy as np
+import fitting
 
 '''
 Average fit error

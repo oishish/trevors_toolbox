@@ -1,8 +1,18 @@
+'''
+display.py
+
+A module for general functions related to displaying information, for functions and classes related
+to displaying specific kinds of information see visual.py
+
+Last updated February 2016
+
+by Trevor Arp
+'''
+
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.widgets import Slider
 from time import sleep
 from os import getcwd as cwd
 
@@ -28,13 +38,15 @@ for use before matplotlib is updated
 '''
 def get_plasma():
 	return mcolors.ListedColormap(_plasma_data, name='Plasma')
+#
 
+'''
+DEPRICIATED in favor of viridis
+Returns the color map for plotting
+$cpt is the central point of the color transition (0 to 1 scale)
+$width is related to the width of the color transition (0 to 1 scale)
+'''
 def generate_colormap(cpt=0.5, width=0.25):
-	'''
-	Returns the color map for plotting
-	$cpt is the central point of the color transition (0 to 1 scale)
-	$width is related to the width of the color transition (0 to 1 scale)
-	'''
 	low_RGB = (249/255., 250/255., 255/255.)
 	cl_RGB = (197/255., 215/255., 239/255.)
 	clpt = np.max([0.05, cpt-width])
@@ -96,7 +108,7 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2):
 		xt = np.linspace(0, len(xparam)-1, nticks)
 		xrng = xparam
 	else:
-		print 'Error set_img_ticks: X Paramter must be a string or an array'
+		print 'Error set_img_ticks: X Parameter must be a string or an array, received: ' + str(xparam)
 		return
 	if isinstance(yparam, str):
 		yt = np.linspace(0, int(log['ny'])-1, nticks)
@@ -105,7 +117,7 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2):
 		yt = np.linspace(0, len(yparam)-1, nticks)
 		yrng = yparam
 	else:
-		print 'Error set_img_ticks: Y Paramter must be a string or an array'
+		print 'Error set_img_ticks: Y Parameter must be a string or an array, received: ' + str(yparam)
 		return
 	xl = xrng[xt.astype(int)]
 	yl = yrng[yt.astype(int)]
@@ -119,62 +131,3 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2):
 	ax.set_xlim(xl[0], xl[len(xt)-1])
 	ax.set_ylim(yl[len(yt)-1], yl[0])
 # end set_img_ticks
-
-'''
-A Class for displaying a data cube, where the user can switch between scans using a slider or using
-the arrow keys.
-
-$d is the data cube to be displayed.
-
-CubeFigure.ax gives the axes for manipulation
-'''
-class CubeFigure(object):
-	def __init__(self, d):
-		self.d = d
-
-		rows, cols, N = self.d.shape
-		self.N = N
-
-		self.fig = plt.figure()
-		self.ax = self.fig.gca()
-
-		self.ix = 1
-		self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=get_viridis())
-		self.cbar = self.fig.colorbar(self.img)
-
-		self.sliderax = self.fig.add_axes([0.2, 0.02, 0.6, 0.03])
-		self.slider = Slider(self.sliderax, 'Scan', 1, N, valinit=1)
-		self.slider.on_changed(self.update_val)
-		self.slider.drawon = False
-
-		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
-
-		self.fig.canvas.mpl_connect('key_press_event', self.onKey)
-		self.fig.show()
-	# end init
-
-	def onKey(self, event):
-		k = event.key
-		if (k == 'right' or k == 'up') and self.ix < self.N:
-			val = self.ix + 1
-			self.slider.set_val(val)
-			self.update_val(val)
-		elif (k == 'left' or k == 'down') and self.ix > 1:
-			val = self.ix - 1
-			self.slider.set_val(val)
-			self.update_val(val)
-		#
-	# end onKey
-
-	def update_val(self, value):
-		self.ix = int(value)
-		self.img.set_data(self.d[:,:,self.ix-1])
-		self.img.autoscale()
-		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
-		self.update()
-	# end update_val
-
-	def update(self):
-		self.fig.canvas.draw()
-	# end update
-# end CubeFigure

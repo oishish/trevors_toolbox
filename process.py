@@ -318,7 +318,9 @@ $default and $default_err are the values to default to if the fitting routine fa
 
 $stabalize determines whether to stablize the image against drift in the galvos, time-intensive.
 
-$display When processing timing info is printed to terminal
+$display When processing timing info is printed to terminal. $debug prints out even more
+
+$overwrite if True will re-process and overwrite existing files
 
 Returns:
 returns the averaged power, dR/R, photocurrent and the fits as
@@ -333,13 +335,15 @@ def Space_Power_Cube(run,
     err_default=(-1,-1,-1.0),
     stabalize=True,
     display=True,
-    debug=False):
+    debug=False,
+    overwrite=False
+    ):
 
     log = run.log
     rn = log['Run Number']
 
     # If it hasn't already been saved to the savefile
-    if savefile is not None and exists(join(savefile, rn+"_processed.npz")):
+    if savefile is not None and exists(join(savefile, rn+"_processed.npz")) and not overwrite:
         files = np.load(join(savefile, rn+"_processed.npz"))
         power = files['power']
         drR = files['drR']
@@ -400,8 +404,8 @@ def Space_Power_Cube(run,
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
             print "Starting Processing on " + s + " datacube"
         t0 = timer()
-        fit_drR = np.zeros((rows, cols, 2*N))
-        fit_pci = np.zeros((rows, cols, 2*N))
+        fit_drR = np.zeros((rows, cols, 6))
+        fit_pci = np.zeros((rows, cols, 6))
         for i in range(rows):
             for j in range(cols):
                 params, err = power_law_fit(power[i,:], np.abs(d[i,j,:]), p_default=default, perr_default=err_default)

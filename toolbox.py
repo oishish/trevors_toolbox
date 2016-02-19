@@ -44,6 +44,11 @@ format_plot_axes = display.format_plot_axes
 get_viridis = display.get_viridis
 
 '''
+Contains functions relating to specific visualizations
+'''
+import visual
+
+'''
 Calibration functions
 '''
 import calibration
