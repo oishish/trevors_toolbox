@@ -322,6 +322,9 @@ $display When processing timing info is printed to terminal. $debug prints out e
 
 $overwrite if True will re-process and overwrite existing files
 
+$fast determines where to limit the autocorrelation in image stabalization to the center 100x100 data
+points for faster performance.
+
 Returns:
 returns the averaged power, dR/R, photocurrent and the fits as
 
@@ -336,7 +339,8 @@ def Space_Power_Cube(run,
     stabalize=True,
     display=True,
     debug=False,
-    overwrite=False
+    overwrite=False,
+    fast=False
     ):
 
     log = run.log
@@ -382,20 +386,11 @@ def Space_Power_Cube(run,
             if display:
                 print "Stablizing images"
             for i in range(N-2, -1,-1):
-                if rows > 100 or cols > 100:
-                    ixr = rows/2
-                    ixc = cols/2
-                    sft = compute_shift(d[ixr-50:ixr+50,ixc-50:ixc+50,i], d[ixr-50:ixr+50,ixc-50:ixc+50,N-1])
-                    d[:,:,i] = ndshift(d[:,:,i], sft)
-                    drR[:,:,i] = ndshift(drR[:,:,i], sft)
-                    if debug:
-                        print i, sft
-                else:
-                    sft = compute_shift(d[:,:,i], d[:,:,N-1])
-                    d[:,:,i] = ndshift(d[:,:,i], sft)
-                    drR[:,:,i] = ndshift(drR[:,:,i], sft)
-                    if debug:
-                        print i, sft
+                sft = compute_shift(d[:,:,i], d[:,:,N-1])
+                d[:,:,i] = ndshift(d[:,:,i], sft)
+                drR[:,:,i] = ndshift(drR[:,:,i], sft)
+                if debug:
+                    print i, sft
             #
         #
 

@@ -137,9 +137,10 @@ class Cube_Point_Display():
 	Handels the click event
 	'''
 	def onClick(self, event):
-		self.x = int(event.xdata)
-		self.y = int(event.ydata)
-		self.updateLines()
+		if isinstance(event.xdata, (int, float)) and isinstance(event.ydata, (int, float)):
+			self.x = int(event.xdata)
+			self.y = int(event.ydata)
+			self.updateLines()
 	# end onClick
 
 	'''

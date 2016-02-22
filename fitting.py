@@ -257,7 +257,7 @@ $d1 and $d2 are the two images to compute the shift between. Assumes they are th
 '''
 def compute_shift(d1, d2):
     rows, cols = d1.shape
-    ac = sp.signal.correlate(d1, d2)
+    ac = sp.signal.fftconvolve(d1, d2[::-1, ::-1]) #sp.signal.correlate2d(d1, d2)
     mx = np.unravel_index(ac.argmax(), ac.shape)
     N, M = ac.shape
     x = np.linspace(0, M, M)
