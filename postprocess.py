@@ -10,6 +10,7 @@ Last updated February 2016
 by Trevor Arp
 '''
 import numpy as np
+import scipy as sp
 import fitting
 
 '''
@@ -52,3 +53,38 @@ def filter_power_cube(d, power, fit, max_chi=0.5):
                 out_gamma_err[i,j] = gamma_err[i,j]
     return out_gamma, out_gamma_err, chi
 # end filter_power_cube
+
+'''
+Takes a fit matrix (from a power data cube) and filters the gamma values (gamma = fit[:,:,2]) based on the
+sign of the slope (slovbe B = fit[:,:,1]). Returns two matirices, with values of positive slope
+and one with values of negative slope.
+
+$mingamma is the minimum absolute value of gamma needed for a point to be considered, if if
+doesn't meet this threshold it will not be in either returned matrix.
+
+If $nanfill is true will fill the empty points in both arrays with NaNs for transparent plotting
+'''
+def filter_slopes_power_cube(fit, mingamma=0.0, nanfill=False):
+    g = fit[:,:,2]
+    B = fit[:,:,1]
+    rows, cols, dim = fit.shape
+    if dim != 6:
+        s = "Error filter_slopes_power_cube: input fit cube must have dimension of 6, based on the"
+        s += "standard power law fit."
+    if nanfill:
+        g_above = np.empty((rows,cols))
+        g_below = np.empty((rows,cols))
+        g_above[:,:] = np.nan
+        g_below[:,:] = np.nan
+    else:
+        g_above = np.zeros((rows,cols))
+        g_below = np.zeros((rows,cols))
+    for i in range(rows):
+        for j in range(cols):
+            if np.abs(g[i,j]) > mingamma:
+                if B[i,j] > 0.0:
+                    g_above[i,j] = g[i,j]
+                else:
+                    g_below[i,j] = g[i,j]
+    return g_above, g_below
+# end filter_slopes_power_cube
