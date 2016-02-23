@@ -70,27 +70,29 @@ with the given run number.
 
 $directory is the directory to search in, $rn is the run number
 
+$fileend is the end of the file name, by default '_log.log'
+
 returns the path to the directory that the files are in, or None if nothing is found
 '''
-def find_run(rn, directory=None):
+def find_run(rn, directory=None, fileend='_log.log'):
 	if directory is None:
 		local_values = get_locals()
 		directory = local_values['datadir']
 	path = directory
 	s = rn.split('_')
-	if OS_exists(join(path, rn + '_log.log')):
+	if OS_exists(join(path, rn + fileend)):
 		return path
 	else:
 		path = join(path, s[0])
-	if OS_exists(join(path, rn + '_log.log')):
+	if OS_exists(join(path, rn + fileend)):
 		return path
 	else:
 		path = join(path, s[0] + '_' + s[1])
-	if OS_exists(join(path, rn + '_log.log')):
+	if OS_exists(join(path, rn + fileend)):
 		return path
 	else:
 		path = join(path, s[0] + '_' + s[1] + '_' + s[2])
-	if OS_exists(join(path, rn + '_log.log')):
+	if OS_exists(join(path, rn + fileend)):
 		return path
 	else:
 		return None

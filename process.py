@@ -164,6 +164,30 @@ def old_load_run(run_num, directory=''):
 # end old_load_run
 
 '''
+Retreives the processed data from a run, searching in the local directory and the default directory
+defined by the locals.
+
+Returns a dictionary of the varables
+'''
+def get_processed_data(run_num, directory=''):
+    fend = '_processed.npz'
+    if exists(run_num + fend):
+        path = ''
+    elif find_run(run_num, directory=directory, fileend=fend) is not None:
+        path = find_run(run_num, directory=directory, fileend=fend)
+    elif find_run(run_num, fileend=fend) is not None:
+        path = find_run(run_num, fileend=fend)
+    else:
+        print 'Error get_processed_data : Could not find files'
+        raise IOError
+    files = np.load(join(path, run_num+"_processed.npz"))
+    out = dict()
+    for k in files.files:
+        out[k] = files[k]
+    return out
+# end get_processed_data
+
+'''
 For a map of reflection computes and returns a map of Delta R over R
 
 $r is the reflection image,
