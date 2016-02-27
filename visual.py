@@ -120,7 +120,7 @@ class Cube_Point_Display():
 		self.axc = plt.subplot(1,2,2)
 		pc = np.abs(self.d[y,x,:])
 		pdata = self.p[x,:]
-		self.fline = self.axc.plot(pdata, self.f(pdata, self.fit[y,x,0], self.fit[y,x,1], self.fit[y,x,2]), 'b-', lw=2)
+		self.fline = self.axc.plot(pdata, self.f(pdata, self.fit[y,x,0], self.fit[y,x,1]), 'b-', lw=2)
 		self.dpts = self.axc.plot(pdata, pc, 'bo', lw=2)
 		self.axc.set_xlabel(zlabel)
 		self.axc.set_ylabel(vlabel)
@@ -159,7 +159,7 @@ class Cube_Point_Display():
 		pc = np.abs(self.d[y,x,:])
 		pdata = self.p[x,:]
 		self.fline[0].set_xdata(pdata)
-		self.fline[0].set_ydata(self.f(pdata, self.fit[y,x,0], self.fit[y,x,1], self.fit[y,x,2]))
+		self.fline[0].set_ydata(self.f(pdata, self.fit[y,x,0], self.fit[y,x,1]))
 		self.dpts[0].set_xdata(pdata)
 		self.dpts[0].set_ydata(pc)
 		self.axc.relim()
@@ -189,14 +189,14 @@ class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 	# end init
 
 	def get_title(self):
-		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,2],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,5],2))
+		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,3],2))
 # end Power_PCI_Cube_Point_Display
 
 class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 	def __init__(self, run):
 		rn = run.log['Run Number']
 		power, drR, d, fit_drR, fit_pci = process.Space_Power_Cube(run, savefile=find_run(rn))
-		Cube_Point_Display.__init__(self, rn, drR, power, fit_drR[:,:,2], fit_drR, fitting_power_law,
+		Cube_Point_Display.__init__(self, rn, drR, power, fit_drR[:,:,1], fit_drR, fitting_power_law,
 			xlabel='Microns',
 			ylabel='Microns',
 			zlabel='Power (mW)',
@@ -207,5 +207,5 @@ class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 	# end init
 
 	def get_title(self):
-		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,2],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,5],2))
+		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,3],2))
 # end Power_PCI_Cube_Point_Display

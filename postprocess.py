@@ -35,15 +35,15 @@ chi =  sum( (obs-expected)^2/expected^2 )
 def filter_power_cube(d, power, fit, max_chi=0.5):
     rows, cols, N = d.shape
     f = fitting.power_law
-    gamma = fit[:,:,2]
-    gamma_err = fit[:,:,5]
-    A = fit[:,:,1]
+    A = fit[:,:,0]
+    gamma = fit[:,:,1]
+    gamma_err = fit[:,:,3]
     out_gamma = np.zeros((rows, cols))
     out_gamma_err = np.zeros((rows, cols))
     chi = np.zeros((rows, cols))
     for i in range(rows):
         for j in range(cols):
-            expected = f(power[i,:], fit[i,j,0], fit[i,j,1], fit[i,j,2])
+            expected = f(power[i,:], fit[i,j,0], fit[i,j,1])
             chi[i,j] = avg_error(np.abs(d[i,j,:]), expected)
             if chi[i,j] > max_chi or gamma[i,j] <= 0.0:
                 out_gamma[i,j] = np.nan
@@ -65,10 +65,10 @@ doesn't meet this threshold it will not be in either returned matrix.
 If $nanfill is true will fill the empty points in both arrays with NaNs for transparent plotting
 '''
 def filter_slopes_power_cube(fit, mingamma=0.0, nanfill=False):
-    g = fit[:,:,2]
-    B = fit[:,:,1]
+    g = fit[:,:,1]
+    B = fit[:,:,0]
     rows, cols, dim = fit.shape
-    if dim != 6:
+    if dim != 4:
         s = "Error filter_slopes_power_cube: input fit cube must have dimension of 6, based on the"
         s += "standard power law fit."
     if nanfill:

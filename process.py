@@ -358,8 +358,8 @@ def Space_Power_Cube(run,
     savefile=None,
     geometric_calib=(3.42, 0.284),
     backgnd=None,
-    default=(-1,-1,-1),
-    err_default=(-1,-1,-1.0),
+    default=(-1,-1),
+    err_default=(-1,-1),
     stabalize=True,
     display=True,
     debug=False,
@@ -423,16 +423,16 @@ def Space_Power_Cube(run,
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
             print "Starting Processing on " + s + " datacube"
         t0 = timer()
-        fit_drR = np.zeros((rows, cols, 6))
-        fit_pci = np.zeros((rows, cols, 6))
+        fit_drR = np.zeros((rows, cols, 4))
+        fit_pci = np.zeros((rows, cols, 4))
         for i in range(rows):
             for j in range(cols):
                 params, err = power_law_fit(power[i,:], np.abs(d[i,j,:]), p_default=default, perr_default=err_default)
-                fit_pci[i,j,0:3] = params
-                fit_pci[i,j,3:6] = err
+                fit_pci[i,j,0:2] = params
+                fit_pci[i,j,2:4] = err
                 params, err = power_law_fit(power[i,:], np.abs(drR[i,j,:]), p_default=default, perr_default=err_default)
-                fit_drR[i,j,0:3] = params
-                fit_drR[i,j,3:6] = err
+                fit_drR[i,j,0:2] = params
+                fit_drR[i,j,2:4] = err
         tf = timer()
         if display:
             print " "
