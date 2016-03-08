@@ -39,7 +39,7 @@ leave as -1 to start with the first element in $x and $y
 $xstop is the last data point to include in the fit,
 leave as -1 to start with the last element in $x and $y
 '''
-def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1):
+def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
     l = len(y)
     if len(x) != l :
         print "Error fitting.symm_exponential_fit: X and Y data must have the same length"
@@ -57,10 +57,17 @@ def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1):
         p, plconv = fit(symm_exp, x[xstart:xstop], y[xstart:xstop],p0=p0)
         perr = np.sqrt(np.diag(plconv))
     except Exception as e:
-        p = p0
-        perr = (0,0,0)
-        print "Error fitting.symm_exponential_fit: Could not fit, parameters set to default"
-        print str(e)
+        if p_default is None:
+            p = p0
+            perr = (0,0,0)
+            print "Error fitting.symm_exponential_fit: Could not fit, parameters set to default"
+            print str(e)
+        else:
+            p = p_default
+            if perr_default is None:
+                perr = (0,0,0)
+            else:
+                perr = perr_default
     return p, perr
 # end symm_exponential_fit
 
