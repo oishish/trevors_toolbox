@@ -45,7 +45,7 @@ def filter_power_cube(d, power, fit, max_chi=0.5):
         for j in range(cols):
             expected = f(power[i,:], fit[i,j,0], fit[i,j,1])
             chi[i,j] = avg_error(np.abs(d[i,j,:]), expected)
-            if chi[i,j] > max_chi or gamma[i,j] <= 0.0:
+            if gamma[i,j] <= 0.0: # chi[i,j] > max_chi or gamma[i,j] <= 0.0:
                 out_gamma[i,j] = np.nan
                 out_gamma_err[i,j] = np.nan
             else:

@@ -18,10 +18,10 @@ from scipy.fftpack import fft, ifft, fftfreq
 '''
 Symmetric Exponential Function
 
-y = A + B*Exp(-|x/tau|)
+y = A + B*Exp(-|x-t0/tau|)
 '''
-def symm_exp(x,A,B,tau):
-    return A + B*np.exp(-np.abs(x/tau))
+def symm_exp(x,A,B,tau, t0):
+    return A + B*np.exp(-np.abs((x-t0)/tau))
 
 '''
 Fits data $x and $y to a symmetric exponential function defined by fitting.symm_exp
@@ -52,20 +52,20 @@ def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_
         a = np.mean(y)
         b = np.mean(y[9*l/20:11*l/20]) - a
         t = (x[xstop-1]-x[xstart] )/4.0
-        p0=(a, b, t)
+        p0=(a, b, t, 0.0)
     try:
         p, plconv = fit(symm_exp, x[xstart:xstop], y[xstart:xstop],p0=p0)
         perr = np.sqrt(np.diag(plconv))
     except Exception as e:
         if p_default is None:
             p = p0
-            perr = (0,0,0)
+            perr = (0,0,0,0)
             print "Error fitting.symm_exponential_fit: Could not fit, parameters set to default"
             print str(e)
         else:
             p = p_default
             if perr_default is None:
-                perr = (0,0,0)
+                perr = (0,0,0,0)
             else:
                 perr = perr_default
     return p, perr

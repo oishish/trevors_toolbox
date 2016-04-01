@@ -15,7 +15,7 @@ from matplotlib.widgets import Slider
 
 from display import get_viridis, format_plot_axes
 
-from fitting import power_law as fitting_power_law
+from fitting import power_law as fitting_power_law, symm_exp
 import process
 import postprocess
 from utils import find_run
@@ -26,10 +26,12 @@ the arrow keys.
 
 $d is the data cube to be displayed.
 
+$vrange is a tuple defining the range of the color scale, if None will autoscale
+
 CubeFigure.ax gives the axes for manipulation
 '''
 class CubeFigure(object):
-	def __init__(self, d):
+	def __init__(self, d, vrange=None):
 		self.d = d
 
 		rows, cols, N = self.d.shape
@@ -39,7 +41,12 @@ class CubeFigure(object):
 		self.ax = self.fig.gca()
 
 		self.ix = 1
-		self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=get_viridis())
+		if vrange is not None:
+			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=get_viridis(), vmin=vrange[0], vmax=vrange[1])
+			self.autoZ = False
+		else:
+			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=get_viridis())
+			self.autoZ = True
 		self.cbar = self.fig.colorbar(self.img)
 
 		self.sliderax = self.fig.add_axes([0.2, 0.02, 0.6, 0.03])
@@ -69,7 +76,8 @@ class CubeFigure(object):
 	def update_val(self, value):
 		self.ix = int(value)
 		self.img.set_data(self.d[:,:,self.ix-1])
-		self.img.autoscale()
+		if self.autoZ:
+			self.img.autoscale()
 		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
 		self.update()
 	# end update_val
@@ -84,7 +92,7 @@ A Class for dispalying the fit to a data cube and showing line cuts for a given 
 '''
 class Cube_Point_Display():
 	def __init__(self, rn, d, power, fmap, fit, fitfunc,
-		xlabel='', ylabel='', zlabel='', vlabel='', title='', figtitle=''
+		xlabel='', ylabel='', zlabel='', vlabel='', title='', figtitle='', nargs=2
 		):
 		self.rn = rn
 		self.d = d
@@ -99,6 +107,9 @@ class Cube_Point_Display():
 		self.y = self.rows/2
 		x = self.x
 		y = self.y
+
+		ri, cj, M = np.shape(self.fit)
+		self.nargs = nargs
 
 		self.fig = plt.figure(rn+'_'+figtitle, figsize=(14,6))
 
@@ -119,8 +130,13 @@ class Cube_Point_Display():
 		# Set up the linecut image
 		self.axc = plt.subplot(1,2,2)
 		pc = np.abs(self.d[y,x,:])
-		pdata = self.p[x,:]
-		self.fline = self.axc.plot(pdata, self.f(pdata, self.fit[y,x,0], self.fit[y,x,1]), 'b-', lw=2)
+
+		if len(self.p.shape) > 1:
+			pdata = self.p[x,:]
+		else:
+			pdata = self.p
+
+		self.fline = self.axc.plot(pdata, self.f(pdata, *self.fit[y,x,0:self.nargs]), 'b-', lw=2)
 		self.dpts = self.axc.plot(pdata, pc, 'bo', lw=2)
 		self.axc.set_xlabel(zlabel)
 		self.axc.set_ylabel(vlabel)
@@ -157,9 +173,12 @@ class Cube_Point_Display():
 		x = self.x
 		y = self.y
 		pc = np.abs(self.d[y,x,:])
-		pdata = self.p[x,:]
+		if len(self.p.shape) > 1:
+			pdata = self.p[x,:]
+		else:
+			pdata = self.p
 		self.fline[0].set_xdata(pdata)
-		self.fline[0].set_ydata(self.f(pdata, self.fit[y,x,0], self.fit[y,x,1]))
+		self.fline[0].set_ydata(self.f(pdata, *self.fit[y,x,0:self.nargs]))
 		self.dpts[0].set_xdata(pdata)
 		self.dpts[0].set_ydata(pc)
 		self.axc.relim()
@@ -208,4 +227,32 @@ class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 
 	def get_title(self):
 		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,3],2))
+# end Power_PCI_Cube_Point_Display
+
+class Delay_PCI_Cube_Point_Display(Cube_Point_Display):
+	def __init__(self, run):
+		rn = run.log['Run Number']
+		delay, drR, d, fit_drR, fit_pci = process.Space_Delay_Cube(run, savefile=find_run(rn))
+
+		tau = fit_pci[:,:,2]
+		tau_err = fit_pci[:,:,6]
+		rows, cols, N = np.shape(fit_pci)
+		for i in range(rows):
+		    for j in range(cols):
+		        if np.abs(fit_pci[i,j,1]) < 0.1 or np.abs(fit_pci[i,j,6]) > 10.0 or np.abs(tau[i,j])>100:
+		            tau[i,j] = np.nan
+
+		Cube_Point_Display.__init__(self, rn, d, delay, tau, fit_pci, symm_exp,
+			xlabel='Microns',
+			ylabel='Microns',
+			zlabel=r'$\Delta t$ (ps)',
+			vlabel='I (nA)',
+			title=rn+ r' Timeconstant $\tau$',
+			figtitle='pci',
+			nargs=4
+			)
+	# end init
+
+	def get_title(self):
+		return r"$\tau = $ "+ str(round(self.fit[self.y,self.x,2],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,6],2))
 # end Power_PCI_Cube_Point_Display

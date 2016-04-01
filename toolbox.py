@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 Utilities module contains commonly used general purpose functions.
 '''
 import utils
+find_run = utils.find_run
 
 '''
 Functions for manipulating scans, a few common functions are directly imported

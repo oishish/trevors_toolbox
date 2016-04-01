@@ -14,9 +14,10 @@ from timeit import default_timer as timer
 import datetime
 from scipy.ndimage.interpolation import shift as ndshift
 
+from scans import range_from_log
 from fitting import power_law_fit
-from fitting import symm_exponential_fit as get_delay_single_fit
-from fitting import double_exponential_fit as get_delay_double_fit
+from fitting import symm_exponential_fit
+from fitting import double_exponential_fit
 from fitting import lowpass, compute_shift
 
 from calibration import calib_response
@@ -243,6 +244,9 @@ $run is the dataimg object for the input run
 $start and $end are the row indicies to fit between, i.e. data[start:row] will be fit. Default
 is 0 and # of rows respectively.
 
+$savefile is the place to save the processed data to, or load from if it already exists. If None
+(default) does not save.
+
 Returns:
 
 $t the two-pulse time delay
@@ -260,41 +264,59 @@ $perr is the error in the fitting parameters $params
 returnt, backgnd, signal, diff, params, perr
 
 '''
-def Delay_Slow_Scan(run, start=0, end=None):
+def Delay_Slow_Scan(run,
+    start=0,
+    end=None,
+    savefile=None,
+    overwrite=False
+    ):
     log = run.log
-    gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
-    d = run.pci*(gain*1.0e9)
-    power = run.pow
-    ref = run.rfi
-    rows, cols = d.shape
+    rn = log['Run Number']
+    # If it hasn't already been saved to the savefile
+    if savefile is not None and exists(join(savefile, rn+"_processed.npz")) and not overwrite:
+        files = np.load(join(savefile, rn+"_processed.npz"))
+        t = files['t']
+        backgnd = files['backgnd']
+        signal = files['signal']
+        diff = files['diff']
+        params = files['params']
+        perr = files['perr']
+    else:
+        gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+        d = run.pci*(gain*1.0e9)
+        power = run.pow
+        ref = run.rfi
+        rows, cols = d.shape
 
-    if end is None:
-        end = rows
+        if end is None:
+            end = rows
 
-    t = range_from_log('Delay (ps)', log, rows)
+        t = np.linspace(log['Delay Start'], log['Delay End'], rows)
+        d = d[start:end,:]
+        power = power[start:end,:]
+        ref = ref[start:end,:]
+        t = t[start:end]
+        rows, cols = d.shape
 
-    d = d[start:rows,:]
-    power = power[start:rows,:]
-    ref = ref[start:rows,:]
-    t = t[start:rows]
-    rows, cols = d.shape
+        backgnd = np.zeros(rows)
+        signal = np.zeros(rows)
+        signalix = range(rows)
+        diff = np.zeros(rows)
+        dpow = np.zeros(rows)
+        dref = np.zeros(rows)
+        for i in range(rows):
+            l = lowpass(d[i,:])
+            signalix[i] = np.argmax(l)
+            backgnd[i] = np.mean(l[cols-10:cols])
+            signal[i] = l[signalix[i]]
+            dpow[i] = power[i,signalix[i]]
+            dref[i] = ref[i,signalix[i]]
+            diff[i] = signal[i] - backgnd[i]
 
-    backgnd = np.zeros(rows)
-    signal = np.zeros(rows)
-    signalix = range(rows)
-    diff = np.zeros(rows)
-    dpow = np.zeros(rows)
-    dref = np.zeros(rows)
-    for i in range(rows):
-        l = lowpass(d[i,:])
-        signalix[i] = np.argmax(l)
-        backgnd[i] = np.mean(l[cols-10:cols])
-        signal[i] = l[signalix[i]]
-        dpow[i] = power[i,signalix[i]]
-        dref[i] = ref[i,signalix[i]]
-        diff[i] = signal[i] - backgnd[i]
-
-    params, perr = get_delay_single_fit(t, diff)
+        params, perr = get_delay_single_fit(t, diff)
+        if savefile is not None:
+            fname = join(savefile, rn + "_processed")
+            np.savez(fname, t=t, backgnd=backgnd, signal=signal, diff=diff, params=params, perr=perr)
     return t, backgnd, signal, diff, params, perr
 # end Delay Slow Scan
 
@@ -347,7 +369,8 @@ $power, $drR, $pci, $fit_drR, $fit_pci
 '''
 def Space_Power_Cube(run,
     savefile=None,
-    geometric_calib=(3.42, 0.284),
+    geometric_calib=(1.166, -0.158),
+    #geometric_calib=(3.42, 0.284), # Prior to 2016/3/30
     backgnd=None,
     default=(-1,-1),
     err_default=(-1,-1),
@@ -441,9 +464,9 @@ Retrives, averages the power and fits a data cube containing spatial scans with 
 For the fit, takes each point and the given power and fits a symmetric exponential
 
 where $fit is a 3D array where for each point in the input map, it has the fit parameters and the
-fit errors for a power law fit as fit[i,j,:] = [A, B, tau, A_error, B_error, tau_error] for the
+fit errors for a power law fit as fit[i,j,:] = [A, B, tau, t0, A_error, B_error, tau_error, t0_error] for the
 fit function:
-y = A + B*Exp(-|x/tau|)
+y = A + B*Exp(-|x-t0/tau|)
 
 Parameters:
 $run is the dataimg object for the input run
@@ -472,8 +495,8 @@ $delay, $drR, $pci, $fit_drR, $fit_pci
 def Space_Delay_Cube(run,
     savefile=None,
     backgnd=None,
-    default=(-1,-1, -1),
-    err_default=(-1,-1, -1),
+    default=None,
+    err_default=None,
     stabalize=True,
     display=True,
     debug=False,
@@ -527,16 +550,16 @@ def Space_Delay_Cube(run,
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
             print "Starting Processing on " + s + " datacube"
         t0 = timer()
-        fit_drR = np.zeros((rows, cols, 4))
-        fit_pci = np.zeros((rows, cols, 4))
+        fit_drR = np.zeros((rows, cols, 8))
+        fit_pci = np.zeros((rows, cols, 8))
         for i in range(rows):
             for j in range(cols):
                 params, err = symm_exponential_fit(delay, np.abs(d[i,j,:]), p_default=default, perr_default=err_default)
-                fit_pci[i,j,0:3] = params
-                fit_pci[i,j,3:6] = err
+                fit_pci[i,j,0:4] = params
+                fit_pci[i,j,4:8] = err
                 params, err = symm_exponential_fit(delay, np.abs(drR[i,j,:]), p_default=default, perr_default=err_default)
-                fit_drR[i,j,0:3] = params
-                fit_drR[i,j,3:6] = err
+                fit_drR[i,j,0:4] = params
+                fit_drR[i,j,4:8] = err
         tf = timer()
         if display:
             print " "
@@ -546,4 +569,81 @@ def Space_Delay_Cube(run,
             fname = join(savefile, rn + "_processed")
             np.savez(fname, delay=delay, drR=drR, d=d, fit_drR=fit_drR, fit_pci=fit_pci)
     return delay, drR, d, fit_drR, fit_pci
+# end Space_Delay_Cube
+
+'''
+Retrives, averages the power and fits a data cube containing spatial scans with varying Source
+Drain Bias.
+
+Parameters:
+$run is the dataimg object for the input run
+
+$savefile is the place to save the processed data to, or load from if it already exists. If None
+(default) does not save.
+
+$backgnd is the background area for Delta R over R, same spec as in the compute_drR function
+
+$stabalize determines whether to stablize the image against drift in the galvos, time-intensive.
+
+$display When processing timing info is printed to terminal. $debug prints out even more
+
+$overwrite if True will re-process and overwrite existing files
+
+Returns:
+returns an array of delay, a cube of photocurent, dR/R
+
+$bias, $drR, $pci
+'''
+def Space_Bias_Cube(run,
+    savefile=None,
+    backgnd=None,
+    stabalize=True,
+    display=True,
+    debug=False,
+    overwrite=False,
+    ):
+
+    log = run.log
+    rn = log['Run Number']
+
+    # If it hasn't already been saved to the savefile
+    if savefile is not None and exists(join(savefile, rn+"_processed.npz")) and not overwrite:
+        files = np.load(join(savefile, rn+"_processed.npz"))
+        bias = files['bias']
+        drR = files['drR']
+        d = files['d']
+    else:
+        gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+        d = run.pci*(gain*1.0e9)
+        rows, cols, N = d.shape
+        bias = np.linspace(log["Source/Drain Start"], log["Source/Drain End"], N)
+        wavelength = round(run.log['Wavelength'])
+
+        if display:
+            print "Loading Images for run: " + str(rn)
+
+        # Compute delta R over R
+        r = run.rfi
+        drR = np.zeros((rows,cols, N))
+        for i in range(N):
+            drR[:,:,i] = compute_drR(r[:,:,i], backgnd)
+        #
+
+        # Stablize the images
+        if stabalize:
+            if display:
+                print "Stablizing images"
+            for i in range(1, N):
+                sft = compute_shift(d[:,:,i], d[:,:,i-1])
+                d[:,:,i] = ndshift(d[:,:,i], sft)
+                drR[:,:,i] = ndshift(drR[:,:,i], sft)
+                if debug:
+                    print i, sft
+            #
+        #
+
+        if savefile is not None:
+            fname = join(savefile, rn + "_processed")
+            np.savez(fname, bias=bias, drR=drR, d=d)
+    return bias, drR, d
 # end fit_power_cube
