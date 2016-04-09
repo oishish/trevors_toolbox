@@ -54,6 +54,22 @@ def filter_power_cube(d, power, fit, max_chi=0.5):
     return out_gamma, out_gamma_err, chi
 # end filter_power_cube
 
+
+'''
+Filters a Space-Delay cube, similar to filter_power_cube
+'''
+def filter_delay_cube(t, fit):
+    tau = fit[:,:,2]
+    tau_err = fit[:,:,6]
+    rows, cols, N = np.shape(fit)
+    for i in range(rows):
+        for j in range(cols):
+            if np.abs(fit[i,j,1]) < 0.1 or np.abs(fit[i,j,6]) > 3.0 or np.abs(tau[i,j])>100:
+                tau[i,j] = np.nan
+                tau_err[i,j] = np.nan
+    return tau, tau_err
+# end filter_delay_cube
+
 '''
 Takes a fit matrix (from a power data cube) and filters the gamma values (gamma = fit[:,:,2]) based on the
 sign of the slope (slovbe B = fit[:,:,1]). Returns two matirices, with values of positive slope

@@ -99,8 +99,10 @@ log file, if they are a numpy array they are set from that array
 
 $nticks is the number of ticks to use
 $sigfigs is the number of significant figures to round to
+
+$aspect if true will fix teh apsect ratio to the given value, usefull if the axes have different units
 '''
-def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2):
+def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None):
 	if isinstance(xparam, str):
 		xt = np.linspace(0, int(log['nx'])-1, nticks)
 		xrng = range_from_log(xparam, log, log['nx'])
@@ -121,11 +123,15 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2):
 		return
 	xl = xrng[xt.astype(int)]
 	yl = yrng[yt.astype(int)]
+	#print yl
 	for i in range(len(xl)):
 	    xl[i] = round(xl[i], sigfigs)
 	for i in range(len(yl)):
 	    yl[i] = round(yl[i], sigfigs)
-	img.set_extent((xl[0], xl[len(xt)-1], yl[len(yt)-1], yl[0]))
+	extent = (xl[0], xl[len(xt)-1], yl[len(yt)-1], yl[0])
+	img.set_extent(extent)
+	if aspect is not None:
+		ax.set_aspect(float(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect))
 	ax.set_xticks(xl)
 	ax.set_yticks(yl)
 	ax.set_xlim(xl[0], xl[len(xt)-1])

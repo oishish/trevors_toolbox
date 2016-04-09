@@ -28,10 +28,14 @@ $d is the data cube to be displayed.
 
 $vrange is a tuple defining the range of the color scale, if None will autoscale
 
+$trange is the title range is not None these values will be displayed for each scan
+
+$title is the title of the graph, will be shown after $trange values if they exist
+
 CubeFigure.ax gives the axes for manipulation
 '''
 class CubeFigure(object):
-	def __init__(self, d, vrange=None):
+	def __init__(self, d, vrange=None, trange=None, title=''):
 		self.d = d
 
 		rows, cols, N = self.d.shape
@@ -56,6 +60,13 @@ class CubeFigure(object):
 
 		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
 
+		self.title = title
+		self.trange = trange
+		if self.trange is not None:
+			self.ax.set_title(str(round(self.trange[self.ix-1])) + ' ' + self.title)
+		else:
+			self.ax.set_title(self.title)
+
 		self.fig.canvas.mpl_connect('key_press_event', self.onKey)
 		self.fig.show()
 	# end init
@@ -79,6 +90,8 @@ class CubeFigure(object):
 		if self.autoZ:
 			self.img.autoscale()
 		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
+		if self.trange is not None:
+			self.ax.set_title(str(round(self.trange[self.ix-1])) + ' ' + self.title)
 		self.update()
 	# end update_val
 
