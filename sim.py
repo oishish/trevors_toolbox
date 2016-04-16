@@ -12,8 +12,10 @@ import numpy as np
 import scipy as sp
 from multiprocessing import Pool
 from timeit import default_timer as timer
+from scipy.integrate import quad
 import datetime
 import traceback
+
 
 '''
 Heaviside Theta function
@@ -30,6 +32,33 @@ Composed of two HTheta function that are 1.0 from start to stop and is zero ever
 def Box(x, start, stop):
     return HTheta(x-start) - HTheta(x-stop)
 #
+
+'''
+For a given profile of $gamma simulate the resulting photocurrent assuming a power law
+photoresponse I = A*P^gamma, and a diffraction limited guassian beam with a full with at
+half max given by $FWHM which must be in the same units as the spatial profile of gamma.
+'''
+def conv_PC_gamma(gamma, FWHM):
+    sigma2 = (FWHM/2.355)**2
+    N = len(gamma)
+    x = np.arange(float(N))
+    if len(x) != N:
+        print "Error in conv_PC_gamma: x and gamma must be the same length"
+        return
+    f = np.zeros(N)
+    mn = np.amin(gamma)
+    for i in range(N):
+        if gamma[i] > mn:
+            f[i] = 1.0
+    # The integrade of the convolution integral
+    def conv(xp, x, sigma2):
+        return np.exp(-(gamma[int(xp)]/(2.0*sigma2))*(x-xp)**2)*f[int(xp)]
+    out = np.ones(N)
+    for i in range(N):
+        y, abserr = quad(conv, 0, N, args=(x[i], sigma2), limit=200)
+        out[i] = y
+    return out
+# end conv_PC_gamma
 
 
 '''

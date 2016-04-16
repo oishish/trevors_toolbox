@@ -60,8 +60,8 @@ def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_
         if p_default is None:
             p = p0
             perr = (0,0,0,0)
-            print "Error fitting.symm_exponential_fit: Could not fit, parameters set to default"
-            print str(e)
+            #print "Error fitting.symm_exponential_fit: Could not fit, parameters set to default"
+            #print str(e)
         else:
             p = p_default
             if perr_default is None:

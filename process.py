@@ -221,15 +221,20 @@ Processes a Finite Scan, basic calibration into nA from the gains. Also works fo
 Parameters:
 $run is the dataimg object for the input run
 
+$sign if true computes the sign of the data from the sign of the angle (when lock in is in r,theta
+mode) and multiplies the data by it.
+
 Returns:
 calibrated data
 
 $rfi (raw), $pci (nA)
 '''
-def Finite_Scan(run):
+def Finite_Scan(run, sign=False):
     log = run.log
     gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
     pci = run.pci*(gain*1.0e9)
+    if sign:
+        pci = pci*np.sign(run.deg)
     return run.rfi, pci
 # end Finite Scan
 
@@ -513,7 +518,7 @@ def Space_Delay_Cube(run,
         delay = files['delay']
         drR = files['drR']
         d = files['d']
-        fit_drR = files['fit_drR']
+        #fit_drR = files['fit_drR']
         fit_pci = files['fit_pci']
     else:
         gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
@@ -550,16 +555,16 @@ def Space_Delay_Cube(run,
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
             print "Starting Processing on " + s + " datacube"
         t0 = timer()
-        fit_drR = np.zeros((rows, cols, 8))
+        #fit_drR = np.zeros((rows, cols, 8))
         fit_pci = np.zeros((rows, cols, 8))
         for i in range(rows):
             for j in range(cols):
                 params, err = symm_exponential_fit(delay, np.abs(d[i,j,:]), p_default=default, perr_default=err_default)
                 fit_pci[i,j,0:4] = params
                 fit_pci[i,j,4:8] = err
-                params, err = symm_exponential_fit(delay, np.abs(drR[i,j,:]), p_default=default, perr_default=err_default)
-                fit_drR[i,j,0:4] = params
-                fit_drR[i,j,4:8] = err
+                # params, err = symm_exponential_fit(delay, np.abs(drR[i,j,:]), p_default=default, perr_default=err_default)
+                # fit_drR[i,j,0:4] = params
+                # fit_drR[i,j,4:8] = err
         tf = timer()
         if display:
             print " "
@@ -567,8 +572,8 @@ def Space_Delay_Cube(run,
             print "Processing Completed in: " + str(datetime.timedelta(seconds=dt))
         if savefile is not None:
             fname = join(savefile, rn + "_processed")
-            np.savez(fname, delay=delay, drR=drR, d=d, fit_drR=fit_drR, fit_pci=fit_pci)
-    return delay, drR, d, fit_drR, fit_pci
+            np.savez(fname, delay=delay, drR=drR, d=d, fit_pci=fit_pci) #, fit_drR=fit_drR
+    return delay, drR, d, fit_pci
 # end Space_Delay_Cube
 
 '''

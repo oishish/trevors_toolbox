@@ -29,45 +29,89 @@ def avg_error(obs, expected):
 '''
 For a power data cube, filters the points based on some criteria
 
-Average fit error
-chi =  sum( (obs-expected)^2/expected^2 )
+$d is the raw data and $power is the power parameter
+
+$fit is the calculated power law fit
+
+kwargs:
+
+$fill is the gamma value to fill the points that are filtered out, default (None) fills with np.nan
+
+$fill_A is the Amplitude value to fill the points that are filtered out, default (None) fills with np.nan
+
+$min_g is the minimum acceptable gamma value, values under it are filtered out
+
+$max_g is the maximum acceptable gamma value, values over it are filtered out
+
+$max_gerr is the maximum value of uncertainty in gamma, points over it are filtered out
+
+Returns filtered values of $gamma and $Amplitude
 '''
-def filter_power_cube(d, power, fit, max_chi=0.5):
+def filter_power_cube(d, power, fit,
+    fill=None,
+    fill_A=None,
+    min_g=0.0,
+    max_g=100.0,
+    max_gerr=100.0,
+    min_A=0.25
+    ):
     rows, cols, N = d.shape
-    f = fitting.power_law
+    if fill is None:
+        fill = np.nan
+    if fill_A is None:
+        fill_A = np.nan
     A = fit[:,:,0]
     gamma = fit[:,:,1]
     gamma_err = fit[:,:,3]
+    out_A = np.zeros((rows, cols))
     out_gamma = np.zeros((rows, cols))
-    out_gamma_err = np.zeros((rows, cols))
-    chi = np.zeros((rows, cols))
     for i in range(rows):
         for j in range(cols):
-            expected = f(power[i,:], fit[i,j,0], fit[i,j,1])
-            chi[i,j] = avg_error(np.abs(d[i,j,:]), expected)
-            if gamma[i,j] <= 0.0: # chi[i,j] > max_chi or gamma[i,j] <= 0.0:
-                out_gamma[i,j] = np.nan
-                out_gamma_err[i,j] = np.nan
+            if gamma[i,j] < min_g or gamma[i,j] > max_g or gamma_err[i,j] > max_gerr:
+                out_gamma[i,j] = fill
+                out_A[i,j] = fill_A
             else:
                 out_gamma[i,j] = gamma[i,j]
-                out_gamma_err[i,j] = gamma_err[i,j]
-    return out_gamma, out_gamma_err, chi
+                out_A[i,j] = A[i,j]
+    return out_gamma, out_A
 # end filter_power_cube
 
 
 '''
 Filters a Space-Delay cube, similar to filter_power_cube
+
+$t is the time delay, and fit is the fit to a symmetric exponential
+
+kwargs:
+
+$fill is the tau value to fill the points that are filtered out, default (None) fills with np.nan
+
+$min_A is the minimum amplitude of the fit function, points less that this are filtered out
+
+$max_tau is the maximum acceptable value of tau, points above this are filtered out
+
+$max_terr is the maximum acceptable error in tau, points above this are filtered out
+
+returns filtered tau values
+
 '''
-def filter_delay_cube(t, fit):
-    tau = fit[:,:,2]
-    tau_err = fit[:,:,6]
+def filter_delay_cube(t, fit,
+    fill=None,
+    min_A=0.1,
+    max_tau=100,
+    max_terr=5.0
+    ):
+    if fill is None:
+        fill = np.nan
     rows, cols, N = np.shape(fit)
+    tau = np.zeros((rows, cols))
     for i in range(rows):
         for j in range(cols):
-            if np.abs(fit[i,j,1]) < 0.1 or np.abs(fit[i,j,6]) > 3.0 or np.abs(tau[i,j])>100:
-                tau[i,j] = np.nan
-                tau_err[i,j] = np.nan
-    return tau, tau_err
+            if np.abs(fit[i,j,1])<min_A or np.abs(fit[i,j,6])>max_terr or np.abs(fit[i,j,2])>max_tau:
+                tau[i,j] = fill
+            else:
+                tau[i,j] = np.abs(fit[i,j,2])
+    return tau
 # end filter_delay_cube
 
 '''

@@ -187,7 +187,7 @@ class Cube_Point_Display():
 		y = self.y
 		pc = np.abs(self.d[y,x,:])
 		if len(self.p.shape) > 1:
-			pdata = self.p[x,:]
+			pdata = self.p[y,:]
 		else:
 			pdata = self.p
 		self.fline[0].set_xdata(pdata)
@@ -209,7 +209,8 @@ class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 	def __init__(self, run):
 		rn = run.log['Run Number']
 		power, drR, d, fit_drR, fit_pci = process.Space_Power_Cube(run, savefile=find_run(rn))
-		gamma, gamma_err, rchi2 = postprocess.filter_power_cube(d, power, fit_pci, max_chi=0.2)
+		gamma, A = postprocess.filter_power_cube(d, power, fit_pci,
+		    fill=0.0, min_g=1.5, max_g=100.0, max_gerr=3.0)
 		Cube_Point_Display.__init__(self, rn, d, power, gamma, fit_pci, fitting_power_law,
 			xlabel='Microns',
 			ylabel='Microns',
@@ -245,15 +246,10 @@ class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 class Delay_PCI_Cube_Point_Display(Cube_Point_Display):
 	def __init__(self, run):
 		rn = run.log['Run Number']
-		delay, drR, d, fit_drR, fit_pci = process.Space_Delay_Cube(run, savefile=find_run(rn))
+		delay, drR, d, fit_pci = process.Space_Delay_Cube(run, savefile=find_run(rn))
 
-		tau = fit_pci[:,:,2]
-		tau_err = fit_pci[:,:,6]
-		rows, cols, N = np.shape(fit_pci)
-		for i in range(rows):
-		    for j in range(cols):
-		        if np.abs(fit_pci[i,j,1]) < 0.1 or np.abs(fit_pci[i,j,6]) > 10.0 or np.abs(tau[i,j])>100:
-		            tau[i,j] = np.nan
+		tau = postprocess.filter_delay_cube(delay, fit_pci,
+		    fill=0.0, max_terr=0.75, min_A=1.0)
 
 		Cube_Point_Display.__init__(self, rn, d, delay, tau, fit_pci, symm_exp,
 			xlabel='Microns',
