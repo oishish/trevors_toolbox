@@ -20,7 +20,7 @@ from fitting import symm_exponential_fit
 from fitting import double_exponential_fit
 from fitting import lowpass, compute_shift
 
-from calibration import calib_response
+from calibration import calib_response, calibrate_power
 
 '''
 Takes a run number and loads the run including the reflection image, the photocurrent image
@@ -374,7 +374,8 @@ $power, $drR, $pci, $fit_drR, $fit_pci
 '''
 def Space_Power_Cube(run,
     savefile=None,
-    geometric_calib=(1.166, -0.158),
+    # geometric_calib=(4.374, -0.3045),
+    #geometric_calib=(1.166, -0.158),  # prior to 4/27
     #geometric_calib=(3.42, 0.284), # Prior to 2016/3/30
     backgnd=None,
     default=(-1,-1),
@@ -416,13 +417,14 @@ def Space_Power_Cube(run,
         #
 
         # Average Power
-        for i in range(N):
-            for j in range(rows):
-                power[j, i] = np.mean(p[j,:,i])
-            # Calibrate
-            power[:,i] = calib_response(power[:,i], wavelength)
-            power[:,i] = geometric_calib[0]*power[:,i] + geometric_calib[1]
+        # for i in range(N):
+        #     for j in range(rows):
+        #         power[j, i] = np.mean(p[j,:,i])
+        #     # Calibrate
+        #     power[:,i] = calib_response(power[:,i], wavelength)
+        #     power[:,i] = geometric_calib[0]*power[:,i] + geometric_calib[1]
         #
+        power = calibrate_power(rn, p, wavelength)
 
         # Stablize the images
         if stabalize:

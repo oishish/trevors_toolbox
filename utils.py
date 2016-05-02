@@ -11,6 +11,7 @@ by Trevor Arp
 import numpy as np
 from scipy.ndimage.interpolation import shift
 
+from datetime import date
 from os.path import abspath as OS_abspath
 from os.path import dirname as OS_dirname
 from os.path import exists as OS_exists
@@ -97,3 +98,11 @@ def find_run(rn, directory=None, fileend='_log.log'):
 	else:
 		return None
 # end find_run
+
+'''
+For a standard run number returns the date at which it was taken as a datetime.date object
+'''
+def date_from_rn(rn):
+	s = rn.split('_')
+	return date(int(s[0]), int(s[1]), int(s[2]))
+# end date_from_rn

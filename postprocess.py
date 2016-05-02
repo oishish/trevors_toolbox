@@ -45,6 +45,8 @@ $max_g is the maximum acceptable gamma value, values over it are filtered out
 
 $max_gerr is the maximum value of uncertainty in gamma, points over it are filtered out
 
+$min_avg_pc is minimum average photocurrent across all scans, points belwo this are filtered out
+
 Returns filtered values of $gamma and $Amplitude
 '''
 def filter_power_cube(d, power, fit,
@@ -53,7 +55,7 @@ def filter_power_cube(d, power, fit,
     min_g=0.0,
     max_g=100.0,
     max_gerr=100.0,
-    min_A=0.25
+    min_A=0.25,
     ):
     rows, cols, N = d.shape
     if fill is None:

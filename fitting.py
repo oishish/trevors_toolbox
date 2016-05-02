@@ -261,15 +261,21 @@ Takes two input images $d1 and $d2 and computes the spatial shift between them (
 similar images)
 
 $d1 and $d2 are the two images to compute the shift between. Assumes they are the same size
+
+When computing the shift the fitting will consider the region +/- 1/$frac around the center of the
+autocorrelation, a larger fraction will take more computational time.
+
+$debugAC when true will return the autocorrelation along with the shift
+
 '''
-def compute_shift(d1, d2):
+def compute_shift(d1, d2, frac=5.0, debugAC=False):
     rows, cols = d1.shape
     ac = sp.signal.fftconvolve(d1, d2[::-1, ::-1]) #sp.signal.correlate2d(d1, d2)
     mx = np.unravel_index(ac.argmax(), ac.shape)
     N, M = ac.shape
     x = np.linspace(0, M, M)
     y = np.linspace(0, N, N)
-    l = int(rows/5.0)
+    l = int(rows/frac)
     Z = ac[N-l:N+l, M-l:M+l]
     try:
         p, pcorr = fit_2D(guass2D, x[M-l:M+l], y[N-l:N+l], Z, (np.max(ac), mx[1], 1.0, mx[0], 1.0))
@@ -278,5 +284,8 @@ def compute_shift(d1, d2):
         print str(e)
         raise
     sft = (-p[3]+rows-1, -p[1]+cols-1)
-    return sft
+    if debugAC:
+        return sft, ac
+    else:
+        return sft
 # end compute_shift
