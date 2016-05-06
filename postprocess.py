@@ -37,45 +37,21 @@ kwargs:
 
 $fill is the gamma value to fill the points that are filtered out, default (None) fills with np.nan
 
-$fill_A is the Amplitude value to fill the points that are filtered out, default (None) fills with np.nan
-
-$min_g is the minimum acceptable gamma value, values under it are filtered out
-
-$max_g is the maximum acceptable gamma value, values over it are filtered out
-
-$max_gerr is the maximum value of uncertainty in gamma, points over it are filtered out
-
-$min_avg_pc is minimum average photocurrent across all scans, points belwo this are filtered out
-
 Returns filtered values of $gamma and $Amplitude
 '''
-def filter_power_cube(d, power, fit,
-    fill=None,
-    fill_A=None,
-    min_g=0.0,
-    max_g=100.0,
-    max_gerr=100.0,
-    min_A=0.25,
-    ):
+def filter_power_cube(d, power, fit, fill=None):
     rows, cols, N = d.shape
     if fill is None:
         fill = np.nan
-    if fill_A is None:
-        fill_A = np.nan
-    A = fit[:,:,0]
     gamma = fit[:,:,1]
-    gamma_err = fit[:,:,3]
-    out_A = np.zeros((rows, cols))
-    out_gamma = np.zeros((rows, cols))
+    params = fit[:,:,0:3]
+    perr = fit[:,:,3:6]
     for i in range(rows):
         for j in range(cols):
-            if gamma[i,j] < min_g or gamma[i,j] > max_g or gamma_err[i,j] > max_gerr:
-                out_gamma[i,j] = fill
-                out_A[i,j] = fill_A
-            else:
-                out_gamma[i,j] = gamma[i,j]
-                out_A[i,j] = A[i,j]
-    return out_gamma, out_A
+            for k in range(2):
+                if np.abs(perr[i,j,k]) > np.abs(params[i,j,k]):
+                    gamma[i,j] = 0.0
+    return gamma
 # end filter_power_cube
 
 

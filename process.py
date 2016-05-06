@@ -375,8 +375,8 @@ $power, $drR, $pci, $fit_drR, $fit_pci
 def Space_Power_Cube(run,
     savefile=None,
     backgnd=None,
-    default=(-1,-1),
-    err_default=(-1,-1),
+    default=(0,0,0),
+    err_default=(0,0,0),
     stabalize=True,
     display=True,
     debug=False,
@@ -414,6 +414,8 @@ def Space_Power_Cube(run,
         #
 
         power = calibrate_power(rn, p, wavelength)
+        for i in range(rows):
+            power[i,:] = power[i,:] - np.min(power[i,:])
 
         # Stablize the images
         if stabalize:
@@ -433,21 +435,16 @@ def Space_Power_Cube(run,
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
             print "Starting Processing on " + s + " datacube"
         t0 = timer()
-        fit_drR = np.zeros((rows, cols, 4))
-        fit_pci = np.zeros((rows, cols, 4))
+        fit_drR = np.zeros((rows, cols, 6))
+        fit_pci = np.zeros((rows, cols, 6))
         for i in range(rows):
             for j in range(cols):
-            #     if np.mean(d[i,j,:]) > 0:
-            #         m = np.min(d[i,j,:])
-            #     else:
-            #         m = np.max(d[i,j,:])
-            #     params, err = power_law_fit(power[i,:], d[i,j,:]-m, p_default=default, perr_default=err_default)
-                params, err = power_law_fit(power[i,:], np.abs(d[i,j,:]), p_default=default, perr_default=err_default)
-                fit_pci[i,j,0:2] = params
-                fit_pci[i,j,2:4] = err
-                params, err = power_law_fit(power[i,:], np.abs(drR[i,j,:]), p_default=default, perr_default=err_default)
-                fit_drR[i,j,0:2] = params
-                fit_drR[i,j,2:4] = err
+                params, err = power_law_fit(power[i,:], d[i,j,:], p_default=default, perr_default=err_default)
+                fit_pci[i,j,0:3] = params
+                fit_pci[i,j,3:6] = err
+                params, err = power_law_fit(power[i,:], drR[i,j,:], p_default=default, perr_default=err_default)
+                fit_drR[i,j,0:3] = params
+                fit_drR[i,j,3:6] = err
         tf = timer()
         if display:
             print " "

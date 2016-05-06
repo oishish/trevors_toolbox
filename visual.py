@@ -105,7 +105,7 @@ A Class for dispalying the fit to a data cube and showing line cuts for a given 
 '''
 class Cube_Point_Display():
 	def __init__(self, rn, d, power, fmap, fit, fitfunc,
-		xlabel='', ylabel='', zlabel='', vlabel='', title='', figtitle='', nargs=2
+		xlabel='', ylabel='', zlabel='', vlabel='', title='', figtitle='', nargs=3
 		):
 		self.rn = rn
 		self.d = d
@@ -185,7 +185,7 @@ class Cube_Point_Display():
 	def updateLines(self):
 		x = self.x
 		y = self.y
-		pc = np.abs(self.d[y,x,:])
+		pc = self.d[y,x,:]
 		if len(self.p.shape) > 1:
 			pdata = self.p[y,:]
 		else:
@@ -208,11 +208,10 @@ class Cube_Point_Display():
 class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 	def __init__(self, run, savefile=None):
 		rn = run.log['Run Number']
-		if savefile is None:
-			savefile=find_run(rn)
+		# if savefile is None:
+		# 	savefile=find_run(rn)
 		power, drR, d, fit_drR, fit_pci = process.Space_Power_Cube(run, savefile=savefile)
-		gamma, A = postprocess.filter_power_cube(d, power, fit_pci,
-		    fill=0.0, min_g=1.0, max_g=50.0, min_A=0.5)
+		gamma = postprocess.filter_power_cube(d, power, fit_pci, fill=0.0)
 		Cube_Point_Display.__init__(self, rn, d, power, gamma, fit_pci, fitting_power_law,
 			xlabel='Microns',
 			ylabel='Microns',
@@ -221,10 +220,14 @@ class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 			title=rn+' Photocurrent '+r'$\gamma$',
 			figtitle='pci'
 			)
+		self.img.set_clim(vmin=1.0, vmax=5.0)
+		self.axf.set_xlabel('')
+		self.axf.set_ylabel('')
+		self.fig.canvas.draw()
 	# end init
 
 	def get_title(self):
-		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,3],2))
+		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,4],2))
 # end Power_PCI_Cube_Point_Display
 
 class Power_RFI_Cube_Point_Display(Cube_Point_Display):
@@ -244,7 +247,7 @@ class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 	# end init
 
 	def get_title(self):
-		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,3],2))
+		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,4],2))
 # end Power_PCI_Cube_Point_Display
 
 class Delay_PCI_Cube_Point_Display(Cube_Point_Display):

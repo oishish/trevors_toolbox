@@ -139,10 +139,10 @@ def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
 '''
 A Power Law Function
 
-y = A + B*x^g
+y = A + B*x^g + I0
 '''
-def power_law(x,A,g):
-    return A*np.power(x,g)
+def power_law(x, A, g, I0):
+    return A*np.power(x,g) + I0
 # end power_law
 
 '''
@@ -173,20 +173,21 @@ def power_law_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default
     if p0 == -1:
         b, a = np.polyfit(x,y,1.0)
         g = 1.0
-        p0=(b, g)
+        p0=(b, g, 0.0)
     try:
         p, plconv = fit(power_law, x[xstart:xstop], y[xstart:xstop], p0=p0, maxfev=2000)
         perr = np.sqrt(np.abs(np.diag(plconv)))
     except Exception as e:
+        #print str(e) #debug
         if p_default is None:
             p = p0
-            perr = (0,0)
-            print "Error fitting.symm_exponential_fit: Could not fit, parameters set to default"
+            perr = (0,0,0)
+            print "Error fitting.power_law_fit: Could not fit, parameters set to default"
             print str(e)
         else:
             p = p_default
             if perr_default is None:
-                perr = (0,0)
+                perr = (0,0,0)
             else:
                 perr = perr_default
     return p, perr
