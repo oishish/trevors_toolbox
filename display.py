@@ -76,12 +76,11 @@ def generate_colormap(cpt=0.5, width=0.25):
 	return mcolors.LinearSegmentedColormap('GreenBlue', cdict)
 # end generate_colormap
 
-
+'''
+Formats the plot axes in a standard format
+$ax is the axes object for the plot, such as plt.gca()
+'''
 def format_plot_axes(ax, fntsize=14, tickfntsize=12):
-	'''
-	Formats the plot axes in a standard format
-	$ax is the axes object for the plot, such as plt.gca()
-	'''
 	for i in ax.spines.itervalues():
 		i.set_linewidth(2)
 	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')

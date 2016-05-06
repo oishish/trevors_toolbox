@@ -209,6 +209,18 @@ def lowpass(data, cutoff=0.05, samprate=1.0):
 # end lowpass
 
 '''
+Takes a data cube and lowpases the columns of each scan using fitting.lowpass
+'''
+def lp_cube_cols(datacube, cutoff=0.05, samprate=1.0):
+    rows, cols, N = datacube.shape
+    original = np.copy(datacube)
+    for j in range(N):
+        for i in range(cols):
+            datacube[:,i,j] = lowpass(original[:,i,j], cutoff=cutoff, samprate=samprate)
+    return datacube
+# end lp_cube_cols
+
+'''
 Returns a normalized fast fourier transform of the given data
 '''
 def normfft(d):

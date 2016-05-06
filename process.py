@@ -318,7 +318,7 @@ def Delay_Slow_Scan(run,
             dref[i] = ref[i,signalix[i]]
             diff[i] = signal[i] - backgnd[i]
 
-        params, perr = get_delay_single_fit(t, diff)
+        params, perr = symm_exponential_fit(t, diff)
         if savefile is not None:
             fname = join(savefile, rn + "_processed")
             np.savez(fname, t=t, backgnd=backgnd, signal=signal, diff=diff, params=params, perr=perr)
@@ -374,9 +374,6 @@ $power, $drR, $pci, $fit_drR, $fit_pci
 '''
 def Space_Power_Cube(run,
     savefile=None,
-    # geometric_calib=(4.374, -0.3045),
-    #geometric_calib=(1.166, -0.158),  # prior to 4/27
-    #geometric_calib=(3.42, 0.284), # Prior to 2016/3/30
     backgnd=None,
     default=(-1,-1),
     err_default=(-1,-1),
@@ -416,14 +413,6 @@ def Space_Power_Cube(run,
             drR[:,:,i] = compute_drR(r[:,:,i], backgnd)
         #
 
-        # Average Power
-        # for i in range(N):
-        #     for j in range(rows):
-        #         power[j, i] = np.mean(p[j,:,i])
-        #     # Calibrate
-        #     power[:,i] = calib_response(power[:,i], wavelength)
-        #     power[:,i] = geometric_calib[0]*power[:,i] + geometric_calib[1]
-        #
         power = calibrate_power(rn, p, wavelength)
 
         # Stablize the images
@@ -448,6 +437,11 @@ def Space_Power_Cube(run,
         fit_pci = np.zeros((rows, cols, 4))
         for i in range(rows):
             for j in range(cols):
+            #     if np.mean(d[i,j,:]) > 0:
+            #         m = np.min(d[i,j,:])
+            #     else:
+            #         m = np.max(d[i,j,:])
+            #     params, err = power_law_fit(power[i,:], d[i,j,:]-m, p_default=default, perr_default=err_default)
                 params, err = power_law_fit(power[i,:], np.abs(d[i,j,:]), p_default=default, perr_default=err_default)
                 fit_pci[i,j,0:2] = params
                 fit_pci[i,j,2:4] = err
