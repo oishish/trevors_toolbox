@@ -199,7 +199,7 @@ if None (default) it is an (N/10, M/10) rectangle in the lower left corner of a 
 def compute_drR(r, backgnd=None):
     if backgnd == None:
         rows, cols = np.shape(r)
-        backgnd = (0, rows/10, 9*cols/10, cols)
+        backgnd = (0, cols/10, 9*rows/10, rows)
     R = np.mean(r[backgnd[2]:backgnd[3],backgnd[0]:backgnd[1]])
     return (r-R)/R
 # end compute drR

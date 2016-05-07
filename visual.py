@@ -142,7 +142,7 @@ class Cube_Point_Display():
 
 		# Set up the linecut image
 		self.axc = plt.subplot(1,2,2)
-		pc = np.abs(self.d[y,x,:])
+		pc = self.d[y,x,:]
 
 		if len(self.p.shape) > 1:
 			pdata = self.p[x,:]
@@ -220,7 +220,7 @@ class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 			title=rn+' Photocurrent '+r'$\gamma$',
 			figtitle='pci'
 			)
-		self.img.set_clim(vmin=1.0, vmax=5.0)
+		self.img.set_clim(vmin=1.25, vmax=5.0)
 		self.axf.set_xlabel('')
 		self.axf.set_ylabel('')
 		self.fig.canvas.draw()
@@ -251,9 +251,11 @@ class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 # end Power_PCI_Cube_Point_Display
 
 class Delay_PCI_Cube_Point_Display(Cube_Point_Display):
-	def __init__(self, run):
+	def __init__(self, run, savefile=None):
 		rn = run.log['Run Number']
-		delay, drR, d, fit_pci = process.Space_Delay_Cube(run, savefile=find_run(rn))
+		if savefile is None:
+			savefile=find_run(rn)
+		delay, drR, d, fit_pci = process.Space_Delay_Cube(run, savefile=savefile)
 
 		tau = postprocess.filter_delay_cube(delay, fit_pci,
 		    fill=0.0, max_terr=0.75, min_A=1.0)
