@@ -421,10 +421,16 @@ def Space_Power_Cube(run,
         if stabalize:
             if display:
                 print "Stablizing images"
-            for i in range(N-2, -1,-1):
-                sft = compute_shift(d[:,:,i], d[:,:,N-1])
-                d[:,:,i] = ndshift(d[:,:,i], sft)
-                drR[:,:,i] = ndshift(drR[:,:,i], sft)
+            ref = d[:,:,N-1] - np.min(d[:,:,N-1])
+            ref = ref/np.max(ref)
+            for i in range(0, N-1):
+                m = np.mean(d[0:25,:,i])
+                mr = np.mean(drR[0:25,:,i])
+                current = d[:,:,i] - np.min(d[:,:,i])
+                current = current/np.max(current)
+                sft = compute_shift(current, ref)
+                d[:,:,i] = ndshift(d[:,:,i], sft, cval=m)
+                drR[:,:,i] = ndshift(drR[:,:,i], sft, cval=mr)
                 if debug:
                     print i, sft
             #
