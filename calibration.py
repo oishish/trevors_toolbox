@@ -59,7 +59,7 @@ returns:
 A 1D (or 2D for a cube) array containing teh calibrated power in mW
 
 '''
-def calibrate_power(rn, power, wavelength, geo_accept=0.35):
+def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):
     files = os.listdir(Power_calibration_dir)
     rundate = date_from_rn(rn)
     for f in files:
@@ -69,7 +69,8 @@ def calibrate_power(rn, power, wavelength, geo_accept=0.35):
                 calib_file = f
             #
         #
-    print "Using Power Calibration File: " + calib_file
+    if display:
+        print "Using Power Calibration File: " + calib_file
     d = np.loadtxt(os.path.join(Power_calibration_dir, calib_file))
     fit = np.polyfit(d[:,1], d[:,0], 1)
     fit[0] = fit[0]*geo_accept

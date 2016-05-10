@@ -210,7 +210,7 @@ class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 		rn = run.log['Run Number']
 		# if savefile is None:
 		# 	savefile=find_run(rn)
-		power, drR, d, fit_drR, fit_pci = process.Space_Power_Cube(run, savefile=savefile)
+		power, drR, d, fit_drR, fit_pci, r = process.Space_Power_Cube(run, savefile=savefile)
 		gamma = postprocess.filter_power_cube(d, power, fit_pci, fill=0.0)
 		Cube_Point_Display.__init__(self, rn, d, power, gamma, fit_pci, fitting_power_law,
 			xlabel='Microns',
@@ -235,7 +235,7 @@ class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 		rn = run.log['Run Number']
 		if savefile is None:
 			savefile=find_run(rn)
-		power, drR, d, fit_drR, fit_pci = process.Space_Power_Cube(run, savefile=savefile)
+		power, drR, d, fit_drR, fit_pci, r = process.Space_Power_Cube(run, savefile=savefile)
 		Cube_Point_Display.__init__(self, rn, drR, power, fit_drR[:,:,1], fit_drR, fitting_power_law,
 			xlabel='Microns',
 			ylabel='Microns',

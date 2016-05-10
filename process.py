@@ -393,6 +393,7 @@ def Space_Power_Cube(run,
         power = files['power']
         drR = files['drR']
         d = files['d']
+        r = files['rfi']
         fit_drR = files['fit_drR']
         fit_pci = files['fit_pci']
     else:
@@ -413,7 +414,7 @@ def Space_Power_Cube(run,
             drR[:,:,i] = compute_drR(r[:,:,i], backgnd)
         #
 
-        power = calibrate_power(rn, p, wavelength)
+        power = calibrate_power(rn, p, wavelength, display=display)
         for i in range(rows):
             power[i,:] = power[i,:] - np.min(power[i,:])
 
@@ -421,15 +422,19 @@ def Space_Power_Cube(run,
         if stabalize:
             if display:
                 print "Stablizing images"
-            ref = d[:,:,N-1] - np.min(d[:,:,N-1])
+            ref = np.abs(d[:,:,N-1])
+            ref = ref - np.min(ref)
             ref = ref/np.max(ref)
             for i in range(0, N-1):
                 m = np.mean(d[0:25,:,i])
+                mrfi = np.mean(r[0:25,:,i])
                 mr = np.mean(drR[0:25,:,i])
-                current = d[:,:,i] - np.min(d[:,:,i])
+                current = np.abs(d[:,:,i])
+                current = current - np.min(current)
                 current = current/np.max(current)
                 sft = compute_shift(current, ref)
                 d[:,:,i] = ndshift(d[:,:,i], sft, cval=m)
+                r[:,:,i] = ndshift(r[:,:,i], sft, cval=mrfi)
                 drR[:,:,i] = ndshift(drR[:,:,i], sft, cval=mr)
                 if debug:
                     print i, sft
@@ -458,8 +463,8 @@ def Space_Power_Cube(run,
             print "Processing Completed in: " + str(datetime.timedelta(seconds=dt))
         if savefile is not None:
             fname = join(savefile, rn + "_processed")
-            np.savez(fname, power=power, drR=drR, d=d, fit_drR=fit_drR, fit_pci=fit_pci)
-    return power, drR, d, fit_drR, fit_pci
+            np.savez(fname, power=power, drR=drR, d=d, fit_drR=fit_drR, fit_pci=fit_pci, rfi=r)
+    return power, drR, d, fit_drR, fit_pci, r
 # end fit_power_cube
 
 '''
