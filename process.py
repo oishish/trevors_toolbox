@@ -41,7 +41,7 @@ def load_run(run_num, directory=''):
     elif find_run(run_num) is not None:
         path = find_run(run_num)
     else:
-        print 'Error load_run : Could not open files'
+        print('Error load_run : Could not open files')
         raise IOError
     #
     file_path = join(path, run_num)
@@ -98,7 +98,7 @@ def old_load_run(run_num, directory=''):
     elif exists(join(directory, run_num + '_log.log')):
         path = join(directory, run_num)
     else:
-        print 'Error dimage.load_run : Could not open files'
+        print('Error dimage.load_run : Could not open files')
         raise IOError
         #
 
@@ -179,7 +179,7 @@ def get_processed_data(run_num, directory=''):
     elif find_run(run_num, fileend=fend) is not None:
         path = find_run(run_num, fileend=fend)
     else:
-        print 'Error get_processed_data : Could not find files'
+        print('Error get_processed_data : Could not find files')
         raise IOError
     files = np.load(join(path, run_num+"_processed.npz"))
     out = dict()
@@ -305,7 +305,7 @@ def Delay_Slow_Scan(run,
 
         backgnd = np.zeros(rows)
         signal = np.zeros(rows)
-        signalix = range(rows)
+        signalix = list(range(rows))
         diff = np.zeros(rows)
         dpow = np.zeros(rows)
         dref = np.zeros(rows)
@@ -405,7 +405,7 @@ def Space_Power_Cube(run,
         power = np.zeros((rows,N))
 
         if display:
-            print "Loading Images for run: " + str(rn)
+            print("Loading Images for run: " + str(rn))
 
         # Compute delta R over R
         r = run.rfi
@@ -421,7 +421,7 @@ def Space_Power_Cube(run,
         # Stablize the images
         if stabalize:
             if display:
-                print "Stablizing images"
+                print("Stablizing images")
             ref = np.abs(d[:,:,N-1])
             ref = ref - np.min(ref)
             ref = ref/np.max(ref)
@@ -437,14 +437,14 @@ def Space_Power_Cube(run,
                 r[:,:,i] = ndshift(r[:,:,i], sft, cval=mrfi)
                 drR[:,:,i] = ndshift(drR[:,:,i], sft, cval=mr)
                 if debug:
-                    print i, sft
+                    print(i, sft)
             #
         #
 
         if display:
-            print "Fitting Images"
+            print("Fitting Images")
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
-            print "Starting Processing on " + s + " datacube"
+            print("Starting Processing on " + s + " datacube")
         t0 = timer()
         fit_drR = np.zeros((rows, cols, 6))
         fit_pci = np.zeros((rows, cols, 6))
@@ -458,9 +458,9 @@ def Space_Power_Cube(run,
                 fit_drR[i,j,3:6] = err
         tf = timer()
         if display:
-            print " "
+            print(" ")
             dt = tf-t0
-            print "Processing Completed in: " + str(datetime.timedelta(seconds=dt))
+            print("Processing Completed in: " + str(datetime.timedelta(seconds=dt)))
         if savefile is not None:
             fname = join(savefile, rn + "_processed")
             np.savez(fname, power=power, drR=drR, d=d, fit_drR=fit_drR, fit_pci=fit_pci, rfi=r)
@@ -532,7 +532,7 @@ def Space_Delay_Cube(run,
         wavelength = round(run.log['Wavelength'])
 
         if display:
-            print "Loading Images for run: " + str(rn)
+            print("Loading Images for run: " + str(rn))
 
         # Compute delta R over R
         r = run.rfi
@@ -544,20 +544,20 @@ def Space_Delay_Cube(run,
         # Stablize the images
         if stabalize:
             if display:
-                print "Stablizing images"
+                print("Stablizing images")
             for i in range(N-2, -1,-1):
                 sft = compute_shift(d[:,:,i], d[:,:,N-1])
                 d[:,:,i] = ndshift(d[:,:,i], sft)
                 drR[:,:,i] = ndshift(drR[:,:,i], sft)
                 if debug:
-                    print i, sft
+                    print(i, sft)
             #
         #
 
         if display:
-            print "Fitting Images"
+            print("Fitting Images")
             s = str(rows) + 'x' + str(cols) + 'x' + str(N)
-            print "Starting Processing on " + s + " datacube"
+            print("Starting Processing on " + s + " datacube")
         t0 = timer()
         #fit_drR = np.zeros((rows, cols, 8))
         fit_pci = np.zeros((rows, cols, 8))
@@ -571,9 +571,9 @@ def Space_Delay_Cube(run,
                 # fit_drR[i,j,4:8] = err
         tf = timer()
         if display:
-            print " "
+            print(" ")
             dt = tf-t0
-            print "Processing Completed in: " + str(datetime.timedelta(seconds=dt))
+            print("Processing Completed in: " + str(datetime.timedelta(seconds=dt)))
         if savefile is not None:
             fname = join(savefile, rn + "_processed")
             np.savez(fname, delay=delay, drR=drR, d=d, fit_pci=fit_pci) #, fit_drR=fit_drR
@@ -629,7 +629,7 @@ def Space_Bias_Cube(run,
         wavelength = round(run.log['Wavelength'])
 
         if display:
-            print "Loading Images for run: " + str(rn)
+            print("Loading Images for run: " + str(rn))
 
         # Compute delta R over R
         r = run.rfi
@@ -641,13 +641,13 @@ def Space_Bias_Cube(run,
         # Stablize the images
         if stabalize:
             if display:
-                print "Stablizing images"
+                print("Stablizing images")
             for i in range(1, N):
                 sft = compute_shift(d[:,:,i], d[:,:,i-1])
                 d[:,:,i] = ndshift(d[:,:,i], sft)
                 drR[:,:,i] = ndshift(drR[:,:,i], sft)
                 if debug:
-                    print i, sft
+                    print(i, sft)
             #
         #
 

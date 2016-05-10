@@ -81,7 +81,7 @@ Formats the plot axes in a standard format
 $ax is the axes object for the plot, such as plt.gca()
 '''
 def format_plot_axes(ax, fntsize=14, tickfntsize=12):
-	for i in ax.spines.itervalues():
+	for i in ax.spines.values():
 		i.set_linewidth(2)
 	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')
 	matplotlib.rcParams.update({'font.size': fntsize})
@@ -109,7 +109,7 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None
 		xt = np.linspace(0, len(xparam)-1, nticks)
 		xrng = xparam
 	else:
-		print 'Error set_img_ticks: X Parameter must be a string or an array, received: ' + str(xparam)
+		print('Error set_img_ticks: X Parameter must be a string or an array, received: ' + str(xparam))
 		return
 	if isinstance(yparam, str):
 		yt = np.linspace(0, int(log['ny'])-1, nticks)
@@ -118,7 +118,7 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None
 		yt = np.linspace(0, len(yparam)-1, nticks)
 		yrng = yparam
 	else:
-		print 'Error set_img_ticks: Y Parameter must be a string or an array, received: ' + str(yparam)
+		print('Error set_img_ticks: Y Parameter must be a string or an array, received: ' + str(yparam))
 		return
 	xl = xrng[xt.astype(int)]
 	yl = yrng[yt.astype(int)]

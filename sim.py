@@ -43,7 +43,7 @@ def conv_PC_gamma(gamma, FWHM):
     N = len(gamma)
     x = np.arange(float(N))
     if len(x) != N:
-        print "Error in conv_PC_gamma: x and gamma must be the same length"
+        print("Error in conv_PC_gamma: x and gamma must be the same length")
         return
     f = np.zeros(N)
     mn = np.amin(gamma)
@@ -83,7 +83,7 @@ def multiprocess2D(func, args_array, ncores=4, display=True):
     else:
         disp_rows = np.arange(1, rows, 1)
     if display:
-        print "Parallel Processing Started with " + str(ncores) + " subprocesses"
+        print("Parallel Processing Started with " + str(ncores) + " subprocesses")
     t0 = timer()
     for i in range(rows):
         worker_args = []
@@ -94,16 +94,16 @@ def multiprocess2D(func, args_array, ncores=4, display=True):
             for j in range(cols):
                 output[i,j] = out[j]
             if display and i in disp_rows:
-                print str(round(100*i/float(rows))) + "% Complete"
+                print(str(round(100*i/float(rows))) + "% Complete")
         except Exception as e:
-            print "Exception in sim.multiprocessing2D: Cannot Process"
-            print traceback.print_exc()
-            print "sim.multiprocessing2D: Exiting Process"
+            print("Exception in sim.multiprocessing2D: Cannot Process")
+            print(traceback.print_exc())
+            print("sim.multiprocessing2D: Exiting Process")
             break
     tf = timer()
     if display:
-        print " "
+        print(" ")
         dt = tf-t0
-        print "Computations Completed in: " + str(datetime.timedelta(seconds=dt))
+        print("Computations Completed in: " + str(datetime.timedelta(seconds=dt)))
     return output
 # end multiprocess2D

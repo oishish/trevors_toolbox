@@ -85,7 +85,7 @@ class dataimg():
     def __init__(self, run_num, directory=''):
         l, d = load_run(run_num, directory)
         self.log = l
-        for k,v in d.items():
+        for k,v in list(d.items()):
             setattr(self,k,v)
         self.run_num = run_num
         self.shape = np.shape(self.pci)

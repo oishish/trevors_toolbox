@@ -11,9 +11,9 @@ An event based viewer for data
 import numpy as np
 import scipy as sp
 import threading
-import Tkinter as tk
-import FileDialog
-import tkFileDialog
+import tkinter as tk
+import tkinter.filedialog
+import tkinter.filedialog
 import sys
 import os.path
 
@@ -103,7 +103,7 @@ class tview_app(threading.Thread):
 			self.num_img = self.shape[2]
 			self.current = self.data[:,:,self.current_ix]
 		else:
-			print "Error tview_app.py : Unrecognized data type"
+			print("Error tview_app.py : Unrecognized data type")
 			raise ValueError
 
 		self.fname = file
@@ -315,8 +315,8 @@ class tview_app(threading.Thread):
 	#
 
 	def save_figs(self):
-		f = tkFileDialog.asksaveasfilename(initialdir=save_directory, initialfile=self.title)
-		print f
+		f = tkinter.filedialog.asksaveasfilename(initialdir=save_directory, initialfile=self.title)
+		print(f)
 	#
 
 	def on_scroll(self, event):
@@ -373,7 +373,7 @@ if __name__ == '__main__':
 	if len(sys.argv) == 1:
 		rt = tk.Tk()
 		rt.withdraw()
-		f = tkFileDialog.askopenfilename(initialdir=initial_directory, parent=rt)
+		f = tkinter.filedialog.askopenfilename(initialdir=initial_directory, parent=rt)
 		rt.destroy()
 	else:
 		f=sys.argv[1]
@@ -385,4 +385,4 @@ if __name__ == '__main__':
 			d = np.loadtxt(f)
 		tview_app(d, file=f)
 	else:
-		print "Error in tview_app.py : cannot open file " + str(f)
+		print("Error in tview_app.py : cannot open file " + str(f))

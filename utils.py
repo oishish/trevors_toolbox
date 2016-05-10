@@ -25,7 +25,7 @@ def indexof(list, item):
 	for i in range(len(list)):
 		if list[i] == item :
 			return i
-	print "utils.indexof() Error: Could not locate given item: " + str(item)
+	print("utils.indexof() Error: Could not locate given item: " + str(item))
 	return -1
 # end indexof
 
@@ -62,7 +62,7 @@ def get_locals():
 			out[k] = v
 		return out
 	else:
-		print "Error get_locals(): No local variables file"
+		print("Error get_locals(): No local variables file")
 #end get_locals
 
 '''

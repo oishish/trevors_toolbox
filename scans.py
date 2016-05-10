@@ -28,7 +28,7 @@ def slowscan_2_line(img, xrange=None):
 	elif isinstance(xrange, tuple) and len(xrange) == 2:
 		x = np.linspace(xrange[0],xrange[1],s[0])
 	else:
-		print "Error slowscan_2_line: xrange must be a tuple with format (x_min, x_max)"
+		print("Error slowscan_2_line: xrange must be a tuple with format (x_min, x_max)")
 		return None,None
 	y = np.zeros(s[0])
 	for i in range(s[0]):
@@ -46,12 +46,12 @@ def range_from_log(key, log, N):
 	try:
 		rng = log[key]
 	except:
-		print "Error range_from_log: Cannot read from log file"
+		print("Error range_from_log: Cannot read from log file")
 		return None
 	if isinstance(rng,tuple):
 		return np.linspace(rng[0], rng[1], N)
 	else:
-		print "Error range_from_log: Given key doesn't return a range"
+		print("Error range_from_log: Given key doesn't return a range")
 		return None
 #
 
@@ -65,8 +65,8 @@ def cube_range_from_log(log):
 		N = log['Number of Scans']
 		rng = log[param]
 	except Exception as e:
-		print "Error cube_range_from_log: Could not read cube params from log"
-		print e
+		print("Error cube_range_from_log: Could not read cube params from log")
+		print(e)
 	return np.linspace(rng[0], rng[1],int(N))
 #
 
@@ -78,8 +78,8 @@ def subtract_background(scan, background):
     scan_s = np.shape(scan)
     bg_s = np.shape(background)
     if scan_s != bg_s:
-        print "Error subtract_background: Scan and background different sizes"
-        print "Warning: Returned without subtraction"
+        print("Error subtract_background: Scan and background different sizes")
+        print("Warning: Returned without subtraction")
         return scan
     return scan-background
 # end subtract_background

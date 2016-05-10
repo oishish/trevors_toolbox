@@ -42,7 +42,7 @@ leave as -1 to start with the last element in $x and $y
 def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
     l = len(y)
     if len(x) != l :
-        print "Error fitting.symm_exponential_fit: X and Y data must have the same length"
+        print("Error fitting.symm_exponential_fit: X and Y data must have the same length")
         return
     if xstart == -1:
         xstart = 0
@@ -99,7 +99,7 @@ leave as -1 to start with the last element in $x and $y
 def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
     l = len(y)
     if len(x) != l :
-        print "Error fitting.symm_exponential_fit: X and Y data must have the same length"
+        print("Error fitting.symm_exponential_fit: X and Y data must have the same length")
         return
     if xstart == -1:
         xstart = 0
@@ -121,8 +121,8 @@ def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
     except Exception as e:
         pl = p0
         plerr = (0,0,0)
-        print "Error fitting.double_exponential_fit: Could not fit, parameters set to default"
-        print str(e)
+        print("Error fitting.double_exponential_fit: Could not fit, parameters set to default")
+        print(str(e))
 
     try:
         pr, prconv = fit(symm_exp, t[xr:xstop], diff[xr:xstop], p0=p0)
@@ -131,8 +131,8 @@ def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
     except Exception as e:
         pr = p0
         prerr = (0,0,0)
-        print "Error fitting.double_exponential_fit: Could not fit, parameters set to default"
-        print str(e)
+        print("Error fitting.double_exponential_fit: Could not fit, parameters set to default")
+        print(str(e))
     return pl, plerr, pr, prerr
 ''
 
@@ -164,7 +164,7 @@ leave as -1 to start with the last element in $x and $y
 def power_law_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
     l = len(y)
     if len(x) != l :
-        print "Error fitting.symm_exponential_fit: X and Y data must have the same length"
+        print("Error fitting.symm_exponential_fit: X and Y data must have the same length")
         return
     if xstart == -1:
         xstart = 0
@@ -182,8 +182,8 @@ def power_law_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default
         if p_default is None:
             p = p0
             perr = (0,0,0)
-            print "Error fitting.power_law_fit: Could not fit, parameters set to default"
-            print str(e)
+            print("Error fitting.power_law_fit: Could not fit, parameters set to default")
+            print(str(e))
         else:
             p = p_default
             if perr_default is None:
@@ -244,7 +244,7 @@ def fit_2D(func, x, y, data, p0):
     M = len(x)
     N = len(y)
     if (N,M) != data.shape:
-        print "Error fit_2D: $x and $y must have lengths N and M for an MxN data array"
+        print("Error fit_2D: $x and $y must have lengths N and M for an MxN data array")
         raise ValueError
     coords = np.zeros((2, N*M))
     x_m = np.zeros((N,M))
@@ -293,8 +293,8 @@ def compute_shift(d1, d2, frac=5.0, debugAC=False):
     try:
         p, pcorr = fit_2D(guass2D, x[M-l:M+l], y[N-l:N+l], Z, (np.max(ac), mx[1], 1.0, mx[0], 1.0))
     except Exception as e:
-        print "Error fitting.exact_arg_max: Could not fit autocorrlation to a guassian"
-        print str(e)
+        print("Error fitting.exact_arg_max: Could not fit autocorrlation to a guassian")
+        print(str(e))
         raise
     sft = (-p[3]+rows-1, -p[1]+cols-1)
     if debugAC:

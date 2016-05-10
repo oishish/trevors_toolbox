@@ -70,7 +70,7 @@ def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):
             #
         #
     if display:
-        print "Using Power Calibration File: " + calib_file
+        print("Using Power Calibration File: " + calib_file)
     d = np.loadtxt(os.path.join(Power_calibration_dir, calib_file))
     fit = np.polyfit(d[:,1], d[:,0], 1)
     fit[0] = fit[0]*geo_accept
