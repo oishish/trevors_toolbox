@@ -41,6 +41,7 @@ Contains functions relating to displaying data runs, a few common functions are 
 '''
 import display
 set_img_ticks = display.set_img_ticks
+scale_bar_plot = display.scale_bar_plot
 format_plot_axes = display.format_plot_axes
 get_viridis = display.get_viridis
 

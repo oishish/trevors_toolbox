@@ -60,8 +60,8 @@ def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_
         if p_default is None:
             p = p0
             perr = (0,0,0,0)
-            #print "Error fitting.symm_exponential_fit: Could not fit, parameters set to default"
-            #print str(e)
+            #print("Error fitting.symm_exponential_fit: Could not fit, parameters set to default")
+            #print(str(e))
         else:
             p = p_default
             if perr_default is None:
@@ -139,7 +139,7 @@ def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
 '''
 A Power Law Function
 
-y = A + B*x^g + I0
+y = A*x^g + I0
 '''
 def power_law(x, A, g, I0):
     return A*np.power(x,g) + I0
@@ -178,7 +178,7 @@ def power_law_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default
         p, plconv = fit(power_law, x[xstart:xstop], y[xstart:xstop], p0=p0, maxfev=2000)
         perr = np.sqrt(np.abs(np.diag(plconv)))
     except Exception as e:
-        #print str(e) #debug
+        #print(str(e)) #debug
         if p_default is None:
             p = p0
             perr = (0,0,0)
@@ -218,6 +218,17 @@ def lp_cube_cols(datacube, cutoff=0.05, samprate=1.0):
     for j in range(N):
         for i in range(cols):
             datacube[:,i,j] = lowpass(original[:,i,j], cutoff=cutoff, samprate=samprate)
+    return datacube
+# end lp_cube_cols
+
+'''
+Takes a 2D scan and lowpases the columns of each scan using fitting.lowpass
+'''
+def lp_scan_cols(datacube, cutoff=0.05, samprate=1.0):
+    rows, cols = datacube.shape
+    original = np.copy(datacube)
+    for i in range(cols):
+        datacube[:,i] = lowpass(original[:,i], cutoff=cutoff, samprate=samprate)
     return datacube
 # end lp_cube_cols
 

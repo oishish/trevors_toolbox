@@ -4,7 +4,7 @@ display.py
 A module for general functions related to displaying information, for functions and classes related
 to displaying specific kinds of information see visual.py
 
-Last updated February 2016
+Last updated July 2016
 
 by Trevor Arp
 '''
@@ -13,32 +13,113 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
 from time import sleep
 from os import getcwd as cwd
 
 from scans import range_from_log
 
-from new_colormaps import _viridis_data, _plasma_data
+#from new_colormaps import _viridis_data, _plasma_data
 
 matplotlib.rcParams["keymap.fullscreen"] = ''
 
 '''
-Returns the viridis colormap,
+Sets a plot to use a scale bar and hidden axis,
+Always makes the scale bar in the lower right
 
-for use before matplotlib is updated
+Should be called in place of set_img_ticks, for 2D scans with hidden axis
+$ax is the current axes
+$img is the image object
+$log is the log file
+
+default paramters:
+$length=2 is the length of the colorbar in data units
+$units is the text to put after the length above the scale bar
+$color is the color to use, white by default
+$fontsize
 '''
-def get_viridis():
-	return mcolors.ListedColormap(_viridis_data, name='Viridis')
+def scale_bar_plot(ax, img, log, length=2, units=r'$\mu m$', color='w', fontsize=16):
+	lx = log['Fast Axis End'] - log['Fast Axis Start']
+	xvals = np.linspace(-lx/2, lx/2, 5)
+	ly = log['Slow Axis End'] - log['Slow Axis Start']
+	yvals = np.linspace(-ly/2, ly/2, 5)
+	set_img_ticks(ax, img, log, xvals, yvals, nticks=5)
+	x0 = lx/2 - lx/15 - length
+	y0 = ly/2 - ly/15 - length/10.0
+	fnt = {'family':'STIXGeneral',
+			'size':fontsize}
+	ax.add_patch(mpatches.Rectangle((x0,y0), length, length/10.0, facecolor=color, edgecolor=color))
+	ax.text(x0+length/2, y0-ly/30, str(length)+' '+units, color=color, fontsize=fontsize, horizontalalignment='center', fontdict=fnt)
+	ax.axis('off')
+
+'''
+Set's the default font to the STIX font family
+'''
+def fancy_fonts():
+	matplotlib.rcParams['mathtext.fontset'] = 'stix'
+	matplotlib.rcParams['font.family'] = 'STIXGeneral'
 #
 
 '''
-Returns the plasma colormap,
-
-for use before matplotlib is updated
+Formats the plot axes in a standard format
+$ax is the axes object for the plot, such as plt.gca()
 '''
-def get_plasma():
-	return mcolors.ListedColormap(_plasma_data, name='Plasma')
-#
+def format_plot_axes(ax, fntsize=16, tickfntsize=14):
+	for i in ax.spines.values():
+		i.set_linewidth(2)
+	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')
+	matplotlib.rcParams.update({'font.size': fntsize})
+# end format_plot_axes
+
+'''
+Sets the x and y ticks for a data image based on the log file
+$ax is the current axes
+$img is the image object
+$log is the log file
+
+$xparam and $yparam are the paramters for the x and y axes if they are strings set the from the
+log file, if they are a numpy array they are set from that array
+
+$nticks is the number of ticks to use
+$sigfigs is the number of significant figures to round to
+
+$aspect if true will fix the apsect ratio to the given value, usefull if the axes have different units
+'''
+def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None):
+	if isinstance(xparam, str):
+		xt = np.linspace(0, int(log['nx'])-1, nticks)
+		xrng = range_from_log(xparam, log, log['nx'])
+	elif isinstance(xparam, np.ndarray):
+		xt = np.linspace(0, len(xparam)-1, nticks)
+		xrng = xparam
+	else:
+		print('Error set_img_ticks: X Parameter must be a string or an array, received: ' + str(xparam))
+		return
+	if isinstance(yparam, str):
+		yt = np.linspace(0, int(log['ny'])-1, nticks)
+		yrng = range_from_log(yparam, log, log['ny'])
+	elif isinstance(yparam, np.ndarray):
+		yt = np.linspace(0, len(yparam)-1, nticks)
+		yrng = yparam
+	else:
+		print('Error set_img_ticks: Y Parameter must be a string or an array, received: ' + str(yparam))
+		return
+	xl = xrng[xt.astype(int)]
+	yl = yrng[yt.astype(int)]
+	#print yl
+	for i in range(len(xl)):
+	    xl[i] = round(xl[i], sigfigs)
+	for i in range(len(yl)):
+	    yl[i] = round(yl[i], sigfigs)
+	extent = (xl[0], xl[len(xt)-1], yl[len(yt)-1], yl[0])
+	img.set_extent(extent)
+	if aspect is not None:
+		ax.set_aspect(float(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect))
+	ax.set_xticks(xl)
+	ax.set_yticks(yl)
+	ax.set_xlim(xl[0], xl[len(xt)-1])
+	ax.set_ylim(yl[len(yt)-1], yl[0])
+# end set_img_ticks
 
 '''
 DEPRICIATED in favor of viridis
@@ -77,62 +158,21 @@ def generate_colormap(cpt=0.5, width=0.25):
 # end generate_colormap
 
 '''
-Formats the plot axes in a standard format
-$ax is the axes object for the plot, such as plt.gca()
+Returns the viridis colormap,
+
+DEPRICIATED since the new colormaps were added to matplotlib, still here for backwards compatibility
 '''
-def format_plot_axes(ax, fntsize=14, tickfntsize=12):
-	for i in ax.spines.values():
-		i.set_linewidth(2)
-	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')
-	matplotlib.rcParams.update({'font.size': fntsize})
-# end format_plot_axes
+def get_viridis():
+	# return mcolors.ListedColormap(_viridis_data, name='Viridis')
+	return plt.get_cmap('viridis')
+#
 
 '''
-Sets the x and y ticks for a data image based on the log file
-$ax is the current axes
-$img is the image object
-$log is the log file
+Returns the plasma colormap,
 
-$xparam and $yparam are the paramters for the x and y axes if they are strings set the from the
-log file, if they are a numpy array they are set from that array
-
-$nticks is the number of ticks to use
-$sigfigs is the number of significant figures to round to
-
-$aspect if true will fix teh apsect ratio to the given value, usefull if the axes have different units
+DEPRICIATED since the new colormaps were added to matplotlib, still here for backwards compatibility
 '''
-def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None):
-	if isinstance(xparam, str):
-		xt = np.linspace(0, int(log['nx'])-1, nticks)
-		xrng = range_from_log(xparam, log, log['nx'])
-	elif isinstance(xparam, np.ndarray):
-		xt = np.linspace(0, len(xparam)-1, nticks)
-		xrng = xparam
-	else:
-		print('Error set_img_ticks: X Parameter must be a string or an array, received: ' + str(xparam))
-		return
-	if isinstance(yparam, str):
-		yt = np.linspace(0, int(log['ny'])-1, nticks)
-		yrng = range_from_log(yparam, log, log['ny'])
-	elif isinstance(yparam, np.ndarray):
-		yt = np.linspace(0, len(yparam)-1, nticks)
-		yrng = yparam
-	else:
-		print('Error set_img_ticks: Y Parameter must be a string or an array, received: ' + str(yparam))
-		return
-	xl = xrng[xt.astype(int)]
-	yl = yrng[yt.astype(int)]
-	#print yl
-	for i in range(len(xl)):
-	    xl[i] = round(xl[i], sigfigs)
-	for i in range(len(yl)):
-	    yl[i] = round(yl[i], sigfigs)
-	extent = (xl[0], xl[len(xt)-1], yl[len(yt)-1], yl[0])
-	img.set_extent(extent)
-	if aspect is not None:
-		ax.set_aspect(float(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect))
-	ax.set_xticks(xl)
-	ax.set_yticks(yl)
-	ax.set_xlim(xl[0], xl[len(xt)-1])
-	ax.set_ylim(yl[len(yt)-1], yl[0])
-# end set_img_ticks
+def get_plasma():
+	return plt.get_cmap('plasma')
+	# return mcolors.ListedColormap(_plasma_data, name='Plasma')
+#

@@ -351,9 +351,6 @@ $run is the dataimg object for the input run
 $savefile is the place to save the processed data to, or load from if it already exists. If None
 (default) does not save.
 
-$geometic_calib is the rought geometric conversion to milliwatts, based on alignment, measure separatly and
-don't trust absolutely, linear: power = geometric_calib[0]*raw_power + geometric_calib[1]
-
 $backgnd is the background area for Delta R over R, same spec as in the compute_drR function
 
 $default and $default_err are the values to default to if the fitting routine fails.
@@ -579,6 +576,118 @@ def Space_Delay_Cube(run,
             np.savez(fname, delay=delay, drR=drR, d=d, fit_pci=fit_pci) #, fit_drR=fit_drR
     return delay, drR, d, fit_pci
 # end Space_Delay_Cube
+
+'''
+Processes a power cube where scans consist of a line scan along the fast axis and a bias sweep
+along the slow axis, otherwise very similar to standard power cube processing.
+
+For the fit, takes each point and the given power and fits a power law
+
+where $fit is a 3D array where for each point in the input map, it has the fit parameters and the
+fit errors for a power law fit as fit[i,j,:] = [A, g, A_error, g_error] for the fit
+function:
+y = A*x^g
+
+Parameters:
+$run is the dataimg object for the input run
+
+$savefile is the place to save the processed data to, or load from if it already exists. If None
+(default) does not save.
+
+$backgnd is the background area for Delta R over R, same spec as in the compute_drR function
+
+$default and $default_err are the values to default to if the fitting routine fails.
+
+$stabalize determines whether to stablize the image against drift in the galvos, time-intensive.
+
+$display When processing timing info is printed to terminal. $debug prints out even more
+
+$overwrite if True will re-process and overwrite existing files
+
+$debug displays verbose output
+
+Returns:
+returns the averaged power, photocurrent, the fit and the bias in mV
+
+$power, $pci, $fit_pci, $bias
+
+'''
+def Line_Bias_Power_Cube(run,
+    savefile=None,
+    stabalize=True,
+    display=True,
+    overwrite=False,
+    default=(0,0,0),
+    err_default=(0,0,0),
+    debug=False
+    ):
+    log = run.log
+    rn = log['Run Number']
+    # If it hasn't already been saved to the savefile
+    if savefile is not None and exists(join(savefile, rn+"_processed.npz")) and not overwrite:
+        files = np.load(join(savefile, rn+"_processed.npz"))
+        power = files['power']
+        d = files['d']
+        fit_pci = files['fit_pci']
+        bias = files['bias']
+    else:
+        gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+        d = run.pci*(gain*1.0e9)
+        p = run.pow
+        wavelength = round(run.log['Wavelength'])
+        rows, cols, N = d.shape
+        power = np.zeros((rows,N))
+
+        if display:
+            print("Loading Images for run: " + str(rn))
+
+        power = calibrate_power(rn, p, wavelength, display=display)
+        for i in range(rows):
+            power[i,:] = power[i,:] - np.min(power[i,:])
+
+        bias = np.linspace(log['Source/Drain Start'], log['Source/Drain End'], rows)
+        bias = bias*1.0e3 # convert to mV
+
+        # Stablize the images
+        if stabalize:
+            if display:
+                print("Stablizing images")
+            ref = np.abs(d[:,:,N-1])
+            ref = ref - np.min(ref)
+            ref = ref/np.max(ref)
+            for i in range(0, N-1):
+                m = np.mean(d[0:25,:,i])
+                current = np.abs(d[:,:,i])
+                current = current - np.min(current)
+                current = current/np.max(current)
+                sft = compute_shift(current, ref)
+                d[:,:,i] = ndshift(d[:,:,i], sft, cval=m)
+                if debug:
+                    print(i, sft)
+            #
+        #
+
+        if display:
+            print("Fitting Images")
+            s = str(rows) + 'x' + str(cols) + 'x' + str(N)
+            print("Starting Processing on " + s + " datacube")
+        t0 = timer()
+        fit_pci = np.zeros((rows, cols, 6))
+        for i in range(rows):
+            for j in range(cols):
+                params, err = power_law_fit(power[i,:], d[i,j,:], p_default=default, perr_default=err_default)
+                fit_pci[i,j,0:3] = params
+                fit_pci[i,j,3:6] = err
+        tf = timer()
+        if display:
+            print(" ")
+            dt = tf-t0
+            print("Processing Completed in: " + str(datetime.timedelta(seconds=dt)))
+        if savefile is not None:
+            fname = join(savefile, rn + "_processed")
+            np.savez(fname, power=power, d=d, fit_pci=fit_pci, bias=bias)
+    return power, d, fit_pci, bias
+# end Line_Bias_Power_Cube
 
 '''
 Retrives, averages the power and fits a data cube containing spatial scans with varying Source

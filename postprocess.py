@@ -13,6 +13,10 @@ import numpy as np
 import scipy as sp
 import fitting
 
+from scipy import ndimage as ndi
+from skimage import filters
+from skimage.morphology import skeletonize, remove_small_objects
+
 '''
 Average fit error
 chi =  sum( (obs-expected)^2/expected^2 )
@@ -126,3 +130,29 @@ def filter_slopes_power_cube(fit, mingamma=0.0, nanfill=False):
                     g_below[i,j] = g[i,j]
     return g_above, g_below
 # end filter_slopes_power_cube
+
+'''
+Finds sharp edges in the input image $d using a sobel filter, and morphological operations
+
+if $remove_small is true then small domains will be removed from the filtered image prior to the final
+calculation of the edge, has the potential to remove some of the edge
+'''
+def find_sharp_edges(d, remove_small=False):
+    # edge filter
+    edge = filters.sobel(d)
+
+    # Convert to binary image
+    thresh = filters.threshold_li(edge)
+    edge = edge > thresh
+
+    # Close the gaps
+    edge = ndi.morphology.binary_closing(edge)
+
+    # If desiered remove small domains
+    if remove_small:
+        edge = remove_small_objects(edge)
+
+    # Skeletonize the image down to minimally sized features
+    edge = skeletonize(edge)
+    return edge
+# end find_sharp_edges
