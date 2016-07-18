@@ -56,7 +56,7 @@ $geo_accept the geometric acceptance, percentage of how much of the measured pow
 the GRIN lens
 
 returns:
-A 1D (or 2D for a cube) array containing teh calibrated power in mW
+A 1D (or 2D for a cube) array containing the calibrated power in mW
 
 '''
 def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):

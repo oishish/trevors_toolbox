@@ -42,8 +42,6 @@ alphaFS = 7.2973525664e-3 # Electromagnetic Fine Structure constant
 Rinf = 10973731.568508 # 1/m (Rydberg Constant)
 amu = 1.660539040e-27 # kg (atomic mass unit)
 
-
-
 # Graphene Constansts
 G_vf = 1.0e6 # m/s
 G_a = 0.142 # nm (Graphene lattice constant)

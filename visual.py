@@ -205,6 +205,9 @@ class Cube_Point_Display():
 	# end updateLines
 # end Cube_Linecut_Display
 
+'''
+Derivative of Cube_Point_Display for photocurrent power cubes
+'''
 class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 	def __init__(self, run, savefile=None):
 		rn = run.log['Run Number']
@@ -230,6 +233,9 @@ class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,4],2))
 # end Power_PCI_Cube_Point_Display
 
+'''
+Derivative of Cube_Point_Display for reflection power cubes
+'''
 class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 	def __init__(self, run, savefile=None):
 		rn = run.log['Run Number']
@@ -248,29 +254,4 @@ class Power_RFI_Cube_Point_Display(Cube_Point_Display):
 
 	def get_title(self):
 		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,4],2))
-# end Power_PCI_Cube_Point_Display
-
-class Delay_PCI_Cube_Point_Display(Cube_Point_Display):
-	def __init__(self, run, savefile=None):
-		rn = run.log['Run Number']
-		if savefile is None:
-			savefile=find_run(rn)
-		delay, drR, d, fit_pci = process.Space_Delay_Cube(run, savefile=savefile)
-
-		tau = postprocess.filter_delay_cube(delay, fit_pci,
-		    fill=0.0, max_terr=0.75, min_A=1.0)
-
-		Cube_Point_Display.__init__(self, rn, d, delay, tau, fit_pci, symm_exp,
-			xlabel='Microns',
-			ylabel='Microns',
-			zlabel=r'$\Delta t$ (ps)',
-			vlabel='I (nA)',
-			title=rn+ r' Timeconstant $\tau$',
-			figtitle='pci',
-			nargs=4
-			)
-	# end init
-
-	def get_title(self):
-		return r"$\tau = $ "+ str(round(self.fit[self.y,self.x,2],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,6],2))
 # end Power_PCI_Cube_Point_Display
