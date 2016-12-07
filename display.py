@@ -14,6 +14,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
+import matplotlib.colors as colors
+import matplotlib.cm as cm
 from time import sleep
 from os import getcwd as cwd
 
@@ -51,6 +53,7 @@ def scale_bar_plot(ax, img, log, length=2, units=r'$\mu m$', color='w', fontsize
 	ax.add_patch(mpatches.Rectangle((x0,y0), length, length/10.0, facecolor=color, edgecolor=color))
 	ax.text(x0+length/2, y0-ly/30, str(length)+' '+units, color=color, fontsize=fontsize, horizontalalignment='center', fontdict=fnt)
 	ax.axis('off')
+# end scale_bar_plot
 
 '''
 Set's the default font to the STIX font family
@@ -120,6 +123,28 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None
 	ax.set_xlim(xl[0], xl[len(xt)-1])
 	ax.set_ylim(yl[len(yt)-1], yl[0])
 # end set_img_ticks
+
+
+'''
+Returns a colormap, Normlization and ScalarMappable for given data
+
+if color bounds not specified the min and max of the array are used, the mappable is initilized
+to the data
+'''
+def colorscale_map(darray, cmin=None, cmax=None , mapname='viridis'):
+	cmap = plt.get_cmap(mapname)
+	if cmin is None:
+		cmin = np.min(darray)
+	if cmax is None:
+		cmax = np.max(darray)
+	cNorm  = colors.Normalize(vmin=cmin, vmax=cmax)
+	scalarMap = cm.ScalarMappable(norm=cNorm, cmap=cmap)
+	scalarMap.set_array(darray)
+	return cmap, cNorm, scalarMap
+
+'''
+DEPRICAITED FUNCTIONS
+'''
 
 '''
 DEPRICIATED in favor of viridis

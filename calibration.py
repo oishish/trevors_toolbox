@@ -9,6 +9,7 @@ by Trevor Arp
 '''
 import numpy as np
 from utils import get_locals, date_from_rn
+from datetime import date
 import os
 
 local_values = get_locals()
@@ -53,7 +54,7 @@ $power is the power image or power cube of raw measured power
 $wavelength of the laser
 
 $geo_accept the geometric acceptance, percentage of how much of the measured power couples into
-the GRIN lens
+the GRIN lens, depreciated after improvements to optics made beam coupling tighter
 
 returns:
 A 1D (or 2D for a cube) array containing the calibrated power in mW
@@ -62,11 +63,15 @@ A 1D (or 2D for a cube) array containing the calibrated power in mW
 def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):
     files = os.listdir(Power_calibration_dir)
     rundate = date_from_rn(rn)
+    lastdate = date(2014,1,1)
     for f in files:
         if f.split('.')[1] == 'txt':
             fdate = date_from_rn(f)
-            if rundate > fdate:
+            if rundate >= fdate and fdate >= lastdate:
                 calib_file = f
+                lastdate = fdate
+            if rundate >= date(2016,10,7):
+                geo_accept = 1.0
             #
         #
     if display:
@@ -76,12 +81,15 @@ def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):
     fit[0] = fit[0]*geo_accept
     fit[1] = fit[1]*geo_accept
 
-
     # Average Power
 
     if len(power.shape) > 2:
         rows, cols, N = power.shape
-        bg = np.mean(d[:,2])*np.ones(rows)
+        dr, dc = np.shape(d)
+        if dc > 2:
+            bg = np.mean(d[:,2])*np.ones(rows)
+        else:
+            bg = 0.0
         p = np.zeros((rows,N))
         for i in range(N):
             p[:,i] = np.mean(power[:,:,i], axis=1) - bg
@@ -90,7 +98,7 @@ def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):
     else:
         rows, cols = power.shape
         p = np.mean(power, axis=1)
-        p[:,i] = calib_response(p[:,i], wavelength)
-        p[:,i] = fit[0]*p[:,i] + fit[1]
+        p = calib_response(p, wavelength)
+        p = fit[0]*p + fit[1]
     return p
 # end calibrate_power

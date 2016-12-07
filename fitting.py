@@ -22,6 +22,39 @@ y = A + B*Exp(-|x-t0/tau|)
 '''
 def symm_exp(x,A,B,tau, t0):
     return A + B*np.exp(-np.abs((x-t0)/tau))
+# end symm_exp
+
+'''
+A Power Law Function
+
+y = A*x^g + I0
+'''
+def power_law(x, A, g, I0):
+    return A*np.power(x,g) + I0
+# end power_law
+
+'''
+A one dimensioal Gaussian function given by
+
+f(x,y) = A*Exp[ -(x-x0)^2/(2*sigma^2)]
+
+where X is the corrdinate containing both x and y where x = X[0], y = X[1]
+'''
+def guass(x, A, x0, sigma):
+    return A*np.exp(-(x-x0)**2/(2*sigma**2))
+# end guass2D
+
+'''
+A two dimensional Gaussian function given by
+
+f(x,y) = A* Exp[ -(x-x0)^2/(2*sigmax^2) - (y-y0)^2/(2*sigmay^2) ]
+
+where X is the corrdinate containing both x and y where x = X[0], y = X[1]
+'''
+def guass2D(X, A, x0, sigmax, y0, sigmay):
+    return A*np.exp(-(X[0]-x0)**2/(2*sigmax**2) - (X[1]-y0)**2/(2*sigmay**2))
+# end guass2D
+
 
 '''
 Fits data $x and $y to a symmetric exponential function defined by fitting.symm_exp
@@ -50,7 +83,7 @@ def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_
         xstop = l
     if p0 == -1:
         a = np.mean(y)
-        b = np.mean(y[9*l/20:11*l/20]) - a
+        b = np.mean(y[int(9*l/20):int(11*l/20)]) - a
         t = (x[xstop-1]-x[xstart] )/4.0
         p0=(a, b, t, 0.0)
     try:
@@ -134,16 +167,6 @@ def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
         print("Error fitting.double_exponential_fit: Could not fit, parameters set to default")
         print(str(e))
     return pl, plerr, pr, prerr
-''
-
-'''
-A Power Law Function
-
-y = A*x^g + I0
-'''
-def power_law(x, A, g, I0):
-    return A*np.power(x,g) + I0
-# end power_law
 
 '''
 Fits data $x and $y to a symmetric exponential function defined by fitting.power_law
@@ -194,6 +217,56 @@ def power_law_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default
 # end power_law_fit
 
 '''
+Fits data $x and $y to a symmetric exponential function defined by fitting.symm_exp
+
+Returns the fit parameters and the errors in the fit parameters as (p, perr)
+
+Default parameters:
+
+$p0 is the starting fit parameters,
+leave as-1 to estimate starting parameters from data
+
+$xstart is the first data point to include in the fit,
+leave as -1 to start with the first element in $x and $y
+
+$xstop is the last data point to include in the fit,
+leave as -1 to start with the last element in $x and $y
+'''
+def guass_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
+    l = len(y)
+    if len(x) != l :
+        print("Error fitting.guass_fit: X and Y data must have the same length")
+        return
+    if xstart == -1:
+        xstart = 0
+    if xstop == -1:
+        xstop = l
+    if p0 == -1:
+        a = np.max(y)
+        sigma = 1.0
+        x0 = x[int(len(x)/2)]
+        p0=(a, sigma, x0)
+    try:
+        p, plconv = fit(guass, x[xstart:xstop], y[xstart:xstop], p0=p0)
+        perr = np.sqrt(np.diag(plconv))
+    except Exception as e:
+        if p_default is None:
+            p = p0
+            perr = (0,0,0)
+            #print("Error fitting.symm_exponential_fit: Could not fit, parameters set to default")
+            #print(str(e))
+        else:
+            p = p_default
+            if perr_default is None:
+                perr = (0,0,0)
+            else:
+                perr = perr_default
+    return p, perr
+    #return p0
+# end guass_fit
+
+
+'''
 A generic lowpass filter
 
 $data is the data to be lowpassed, considered to be sampled at 1 Hz
@@ -218,6 +291,20 @@ def lp_cube_cols(datacube, cutoff=0.05, samprate=1.0):
     for j in range(N):
         for i in range(cols):
             datacube[:,i,j] = lowpass(original[:,i,j], cutoff=cutoff, samprate=samprate)
+    return datacube
+# end lp_cube_cols
+
+'''
+Takes a data cube and lowpases the rows, then the columns of each scan using fitting.lowpass
+'''
+def lp_cube_rows_cols(datacube, cutoff=0.05, samprate=1.0):
+    rows, cols, N = datacube.shape
+    original = np.copy(datacube)
+    for j in range(N):
+        for i in range(rows):
+            datacube[i,:,j] = lowpass(original[i,:,j], cutoff=cutoff, samprate=samprate)
+        for i in range(cols):
+            datacube[:,i,j] = lowpass(datacube[:,i,j], cutoff=cutoff, samprate=samprate)
     return datacube
 # end lp_cube_cols
 
@@ -269,16 +356,6 @@ def fit_2D(func, x, y, data, p0):
     return fit(func, coords, data.flatten(), p0=p0)
 # end fit_2D
 
-'''
-A two dimensional Gaussian function given by
-
-f(x,y) = A* Exp[ -(x-x0)^2/(2*sigmax^2) - (y-y0)^2/(2*sigmay^2) ]
-
-where X is the corrdinate containing both x and y where x = X[0], y = X[1]
-'''
-def guass2D(X, A, x0, sigmax, y0, sigmay):
-    return A*np.exp(-(X[0]-x0)**2/(2*sigmax**2) - (X[1]-y0)**2/(2*sigmay**2))
-# end guass2D
 
 '''
 Takes two input images $d1 and $d2 and computes the spatial shift between them (assuming they are
@@ -313,3 +390,18 @@ def compute_shift(d1, d2, frac=5.0, debugAC=False):
     else:
         return sft
 # end compute_shift
+
+'''
+Takes a data cube and subtracts out the background from each individual scan,
+determines the background from the values of the last $nx columns
+
+$ix is the number of columns at the end of each row to use as background
+'''
+def subtract_bg_cube(datacube, nx=20):
+    rows, cols, N = datacube.shape
+    for j in range(N):
+        n = np.mean(datacube[:,cols-nx:cols,j], axis=1)
+        for i in range(rows):
+            datacube[i,:,j] = datacube[i,:,j] - n[i]
+    return datacube
+# end subtract_bg_cube

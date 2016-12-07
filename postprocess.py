@@ -31,7 +31,7 @@ def avg_error(obs, expected):
 # avg_error
 
 '''
-For a power data cube, filters the points based on some criteria
+For a power data cube, filters the points based on the fit
 
 $d is the raw data and $power is the power parameter
 
@@ -43,7 +43,7 @@ $fill is the gamma value to fill the points that are filtered out, default (None
 
 Returns filtered values of $gamma and $Amplitude
 '''
-def filter_power_cube(d, power, fit, fill=None):
+def filter_power_cube(d, power, fit, fill=None, frac=1.0):
     rows, cols, N = d.shape
     if fill is None:
         fill = np.nan
@@ -53,8 +53,37 @@ def filter_power_cube(d, power, fit, fill=None):
     for i in range(rows):
         for j in range(cols):
             for k in range(2):
-                if np.abs(perr[i,j,k]) > np.abs(params[i,j,k]):
+                if np.abs(perr[i,j,k]) > frac*np.abs(params[i,j,k]):
                     gamma[i,j] = 0.0
+    return gamma
+# end filter_power_cube
+
+'''
+For a power data cube, filters the points based on the signal amplitude
+
+$d is the raw data and $power is the power parameter
+
+$fit is the calculated power law fit
+
+kwargs:
+
+$fill is the gamma value to fill the points that are filtered out, default (None) fills with np.nan
+
+$Amp is the minimum absolute value of the amplitude of the signal to be considered
+
+Returns filtered values of $gamma
+'''
+def filter_power_cube_amplitude(d, power, fit, fill=None, Amp=1.0):
+    rows, cols, N = d.shape
+    if fill is None:
+        fill = np.nan
+    gamma = fit[:,:,1]
+    params = fit[:,:,0:3]
+    perr = fit[:,:,3:6]
+    for i in range(rows):
+        for j in range(cols):
+            if np.abs(params[i,j,0]) < Amp:
+                gamma[i,j] = 0.0
     return gamma
 # end filter_power_cube
 

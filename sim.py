@@ -121,6 +121,8 @@ but it can be a list or tuple
 
 Will display progress if $display is True
 
+WARNING: needs to be protected by a if __name__ == "__main__" block or else multiprocessing.pool Will
+throw a hissy fit
 '''
 def multiprocess2D(func, args_array, ncores=4, display=True):
     pool = Pool(processes=ncores)

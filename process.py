@@ -19,6 +19,7 @@ from fitting import power_law_fit
 from fitting import symm_exponential_fit
 from fitting import double_exponential_fit
 from fitting import lowpass, compute_shift
+from fitting import lp_cube_rows_cols
 
 from calibration import calib_response, calibrate_power
 
@@ -331,9 +332,31 @@ the Slow Axis
 
 returns
 '''
-def Full_Rotation_Scan(run, savefile=None):
-    pass
+def Full_Rotation_Scan(run, retMinP=False):
+    rn = run.log['Run Number']
+    log = run.log
+    gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+    pci = run.pci*(gain*1.0e9)
+    p = run.pow
+    wavelength = round(run.log['Wavelength'])
+    rows, cols = pci.shape
+    power = np.zeros(rows)
+    power = calibrate_power(rn, p, wavelength)
+    m = np.min(power)
+    for i in range(rows):
+        power[i] = power[i] - m
+    if retMinP:
+        return power, m, run.rfi, pci
+    else:
+        return power, run.rfi, pci
 # end Fast Piezo Slow Delay
+
+'''
+Equivalent to Full Rotation Scan, here for consistency
+'''
+def Power_Slow_Scan(run):
+    return Full_Rotation_Scan(run)
+#
 
 '''
 Retrives, averages the power and fits a data cube containing spatial scans with varying power.
@@ -375,6 +398,7 @@ def Space_Power_Cube(run,
     default=(0,0,0),
     err_default=(0,0,0),
     stabalize=True,
+    lpfilter=False,
     display=True,
     debug=False,
     overwrite=False,
@@ -394,15 +418,21 @@ def Space_Power_Cube(run,
         fit_drR = files['fit_drR']
         fit_pci = files['fit_pci']
     else:
+        if display:
+            print("Loading Images for run: " + str(rn))
+
+        if lpfilter:
+            if display:
+                print("Lowpass Filtering Rows, Cols")
+            run.pci = lp_cube_rows_cols(run.pci)
+            run.rfi = lp_cube_rows_cols(run.rfi)
+
         gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
         d = run.pci*(gain*1.0e9)
         p = run.pow
         wavelength = round(run.log['Wavelength'])
         rows, cols, N = d.shape
         power = np.zeros((rows,N))
-
-        if display:
-            print("Loading Images for run: " + str(rn))
 
         # Compute delta R over R
         r = run.rfi
@@ -764,4 +794,89 @@ def Space_Bias_Cube(run,
             fname = join(savefile, rn + "_processed")
             np.savez(fname, bias=bias, drR=drR, d=d)
     return bias, drR, d
+# end fit_power_cube
+
+'''
+Retrives, averages the power, extracts the delay and stabalizes a cube where both power and
+delay are varied
+
+Parameters:
+$run is the dataimg object for the input run
+
+$savefile is the place to save the processed data to, or load from if it already exists. If None
+(default) does not save.
+
+$backgnd is the background area for Delta R over R, same spec as in the compute_drR function
+
+$stabalize determines whether to stablize the image against drift in the galvos, time-intensive.
+
+$display When processing timing info is printed to terminal. $debug prints out even more
+
+$overwrite if True will re-process and overwrite existing files
+
+Returns:
+returns arrays of delay and power, a cube of photocurent, dR/R
+
+$delay, $power, $drR, $d
+'''
+def Space_Delay_Power_Cube(run,
+    savefile=None,
+    backgnd=None,
+    stabalize=True,
+    display=True,
+    debug=False,
+    overwrite=False,
+    ):
+
+    log = run.log
+    rn = log['Run Number']
+
+    # If it hasn't already been saved to the savefile
+    if savefile is not None and exists(join(savefile, rn+"_processed.npz")) and not overwrite:
+        files = np.load(join(savefile, rn+"_processed.npz"))
+        power = files['power']
+        delay = files['delay']
+        drR = files['drR']
+        d = files['d']
+    else:
+        gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+        d = run.pci*(gain*1.0e9)
+        rows, cols, N = d.shape
+        bias = np.linspace(log["Source/Drain Start"], log["Source/Drain End"], N)
+        wavelength = round(run.log['Wavelength'])
+        p = run.pow
+
+        if display:
+            print("Loading Images for run: " + str(rn))
+
+        # Compute delta R over R
+        r = run.rfi
+        drR = np.zeros((rows,cols, N))
+        for i in range(N):
+            drR[:,:,i] = compute_drR(r[:,:,i], backgnd)
+        #
+
+        power = calibrate_power(rn, p, wavelength, display=display)
+        for i in range(rows):
+            power[i,:] = power[i,:] - np.min(power[i,:])
+
+        delay = np.linspace(log["Delay Start"], log["Delay End"], N)
+
+        # Stablize the images
+        if stabalize:
+            if display:
+                print("Stablizing images")
+            for i in range(1, N):
+                sft = compute_shift(d[:,:,i], d[:,:,i-1])
+                d[:,:,i] = ndshift(d[:,:,i], sft)
+                drR[:,:,i] = ndshift(drR[:,:,i], sft)
+                if debug:
+                    print(i, sft)
+            #
+        #
+
+        if savefile is not None:
+            fname = join(savefile, rn + "_processed")
+            np.savez(fname, delay=delay, power=power, drR=drR, d=d)
+    return delay, power, drR, d
 # end fit_power_cube

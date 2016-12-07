@@ -211,8 +211,8 @@ Derivative of Cube_Point_Display for photocurrent power cubes
 class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 	def __init__(self, run, savefile=None):
 		rn = run.log['Run Number']
-		# if savefile is None:
-		# 	savefile=find_run(rn)
+		if savefile is None:
+			savefile=find_run(rn)
 		power, drR, d, fit_drR, fit_pci, r = process.Space_Power_Cube(run, savefile=savefile)
 		gamma = postprocess.filter_power_cube(d, power, fit_pci, fill=0.0)
 		Cube_Point_Display.__init__(self, rn, d, power, gamma, fit_pci, fitting_power_law,
