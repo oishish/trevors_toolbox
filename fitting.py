@@ -37,8 +37,6 @@ def power_law(x, A, g, I0):
 A one dimensioal Gaussian function given by
 
 f(x,y) = A*Exp[ -(x-x0)^2/(2*sigma^2)]
-
-where X is the corrdinate containing both x and y where x = X[0], y = X[1]
 '''
 def guass(x, A, x0, sigma):
     return A*np.exp(-(x-x0)**2/(2*sigma**2))
@@ -54,6 +52,15 @@ where X is the corrdinate containing both x and y where x = X[0], y = X[1]
 def guass2D(X, A, x0, sigmax, y0, sigmay):
     return A*np.exp(-(X[0]-x0)**2/(2*sigmax**2) - (X[1]-y0)**2/(2*sigmay**2))
 # end guass2D
+
+'''
+A symmetric bi-exponential function with a fast and slow component
+
+y = A + B*Exp(-|x/tau_slow|) + C*Exp(-|x/tau_fast|)
+'''
+def biexponential(x, A, B, tauS, C, tauF):
+    return A + B*np.exp(-np.abs(x/tauS)) + C*np.exp(-np.abs(x/tauF))
+# end biexponential
 
 
 '''
@@ -167,6 +174,69 @@ def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
         print("Error fitting.double_exponential_fit: Could not fit, parameters set to default")
         print(str(e))
     return pl, plerr, pr, prerr
+# end double_exponential_fit
+
+'''
+A symmetric bi-exponential function with a fast and slow component. With a penalization parameter
+to guarrentee that the fast and slow components are the correct order. Only needs to be used
+for the fit
+
+y = A + B*Exp(-|x/tau_slow|) + C*Exp(-|x/tau_fast|)
+'''
+def biexponential_pen(x, A, B, tauS, C, tauF):
+    if 1.5*tauF > tauS:
+        penalization = 10000.0*tauF
+    else:
+        penalization = 0.0
+    return A + B*np.exp(-np.abs(x/tauS)) + C*np.exp(-np.abs(x/tauF)) + penalization
+# end biexponential
+
+'''
+Fits data $x and $y to a biexponential function defined by fitting.biexponential
+
+Returns the fit parameters and the errors in the fit parameters as (p, perr)
+
+Default parameters:
+
+$p0 is the starting fit parameters,
+leave as-1 to estimate starting parameters from data
+
+$xstart is the first data point to include in the fit,
+leave as -1 to start with the first element in $x and $y
+
+$xstop is the last data point to include in the fit,
+leave as -1 to start with the last element in $x and $y
+'''
+def biexponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
+    l = len(y)
+    if len(x) != l :
+        print("Error fitting.symm_exponential_fit: X and Y data must have the same length")
+        return
+    if xstart == -1:
+        xstart = 0
+    if xstop == -1:
+        xstop = l
+    if p0 == -1:
+        ts_start = np.abs(x[0] - x[l-1])/2.0
+        tf_start = ts_start/50.0
+        p0 = (np.min(y), np.max(y)/10.0, ts_start, np.max(y), tf_start)
+    try:
+        p, plconv = fit(biexponential_pen, x, y, p0=p0)
+        #p, plconv = fit(biexponential, x, y, p0=p0)
+        perr = np.sqrt(np.diag(plconv))
+    except Exception as e:
+        #print('Error: Could not fit')
+        if p_default is None:
+            p = p0
+            perr = (0,0,0,0,0)
+        else:
+            p = p_default
+            if perr_default is None:
+                perr = (0,0,0,0,0)
+            else:
+                perr = perr_default
+    return p, perr
+# end biexponential_fit
 
 '''
 Fits data $x and $y to a symmetric exponential function defined by fitting.power_law

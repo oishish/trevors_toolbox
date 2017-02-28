@@ -16,7 +16,7 @@ from scipy.ndimage.interpolation import shift as ndshift
 
 from scans import range_from_log
 from fitting import power_law_fit
-from fitting import symm_exponential_fit
+from fitting import symm_exponential_fit, biexponential_fit
 from fitting import double_exponential_fit
 from fitting import lowpass, compute_shift
 from fitting import lp_cube_rows_cols
@@ -880,3 +880,112 @@ def Space_Delay_Power_Cube(run,
             np.savez(fname, delay=delay, power=power, drR=drR, d=d)
     return delay, power, drR, d
 # end fit_power_cube
+
+'''
+Retrives and fits a data cube containing spatial scans with varying delay.
+
+For the fit, takes each point and the given power and fits a biexponential function:
+
+y = A + B*Exp(-|x/tau_slow|) + C*Exp(-|x/tau_fast|)
+
+where $fit is a 3D array where for each point in the input map, it has the fit parameters and the
+fit errors for a power law fit as
+fit[i,j,:] = [A, B, tau_slow, C, tau_fast, A_error, B_error, tau_slow_error, C_error, tau_fast_error] for the
+
+Where tau_fast and tau_slow are the fast and slow timeconstants
+
+Parameters:
+$run is the dataimg object for the input run
+
+$savefile is the place to save the processed data to, or load from if it already exists. If None
+(default) does not save.
+
+$backgnd is the background area for Delta R over R, same spec as in the compute_drR function
+
+$stabalize determines whether to stablize the image against drift in the galvos, time-intensive.
+
+$display When processing timing info is printed to terminal. $debug prints out even more
+
+$overwrite if True will re-process and overwrite existing files
+
+$fast determines where to limit the autocorrelation in image stabalization to the center 100x100 data
+points for faster performance.
+
+Returns:
+returns the delay, photocurrent and the fits as
+
+$delay, $drR, $pci, $fit_pci
+'''
+def Space_Delay_Cube_biexp(run,
+    savefile=None,
+    backgnd=None,
+    default=None,
+    err_default=None,
+    stabalize=True,
+    display=True,
+    debug=False,
+    overwrite=False,
+    fast=False
+    ):
+
+    log = run.log
+    rn = log['Run Number']
+
+    # If it hasn't already been saved to the savefile
+    if savefile is not None and exists(join(savefile, rn+"_processed.npz")) and not overwrite:
+        files = np.load(join(savefile, rn+"_processed.npz"))
+        delay = files['delay']
+        drR = files['drR']
+        d = files['d']
+        fit_pci = files['fit_pci']
+    else:
+        gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+        d = run.pci*(gain*1.0e9)
+        rows, cols, N = d.shape
+        delay = np.linspace(log["Delay Start"], log["Delay End"], N)
+        wavelength = round(run.log['Wavelength'])
+
+        if display:
+            print("Loading Images for run: " + str(rn))
+
+        # Compute delta R over R
+        r = run.rfi
+        drR = np.zeros((rows,cols, N))
+        for i in range(N):
+            drR[:,:,i] = compute_drR(r[:,:,i], backgnd)
+        #
+
+        # Stablize the images
+        if stabalize:
+            if display:
+                print("Stablizing images")
+            for i in range(N-2, -1,-1):
+                sft = compute_shift(d[:,:,i], d[:,:,N-1])
+                d[:,:,i] = ndshift(d[:,:,i], sft)
+                drR[:,:,i] = ndshift(drR[:,:,i], sft)
+                if debug:
+                    print(i, sft)
+            #
+        #
+
+        if display:
+            print("Fitting Images")
+            s = str(rows) + 'x' + str(cols) + 'x' + str(N)
+            print("Starting Processing on " + s + " datacube")
+        t0 = timer()
+        fit_pci = np.zeros((rows, cols, 10))
+        for i in range(rows):
+            for j in range(cols):
+                params, err = biexponential_fit(delay, np.abs(d[i,j,:]), p_default=default, perr_default=err_default)
+                fit_pci[i,j,0:5] = params
+                fit_pci[i,j,5:10] = err
+        tf = timer()
+        if display:
+            print(" ")
+            dt = tf-t0
+            print("Processing Completed in: " + str(datetime.timedelta(seconds=dt)))
+        if savefile is not None:
+            fname = join(savefile, rn + "_processed")
+            np.savez(fname, delay=delay, drR=drR, d=d, fit_pci=fit_pci) #, fit_drR=fit_drR
+    return delay, drR, d, fit_pci
+# end Space_Delay_Cube

@@ -126,6 +126,44 @@ def filter_delay_cube(t, fit,
 # end filter_delay_cube
 
 '''
+Filters a Space-Delay cube with a biexponential fit
+
+$t is the time delay, and fit is the fit to a symmetric exponential
+
+kwargs:
+
+$fill is the tau value to fill the points that are filtered out, default (None) fills with np.nan
+
+$min_Amp is the minimum amplitude of the fit function (sum of A,B,C), points less that this are filtered out
+
+$fracUC is the maximum fractional uncertainty in either tau_fast or tau_slow, if either have a greater
+fractional uncertainty they will be filtered out
+
+returns filtered tau values
+
+'''
+def filter_biexp_delay_cube(t, fit,
+    fill=None,
+    min_Amp=1.0,
+    fracUC=2.0
+    ):
+    if fill is None:
+        fill = np.nan
+    rows, cols, N = np.shape(fit)
+    tauSlow = np.zeros((rows, cols))
+    tauFast = np.zeros((rows, cols))
+    for i in range(rows):
+        for j in range(cols):
+            if np.abs(fit[i,j,7]/fit[i,j,2])>fracUC or  np.abs(fit[i,j,9]/fit[i,j,4])>fracUC:
+                tauSlow[i,j] = fill
+                tauFast[i,j] = fill
+            else:
+                tauSlow[i,j] = np.abs(fit[i,j,2])
+                tauFast[i,j] = np.abs(fit[i,j,4])
+    return tauSlow, tauFast
+# end filter_delay_cube
+
+'''
 Takes a fit matrix (from a power data cube) and filters the gamma values (gamma = fit[:,:,2]) based on the
 sign of the slope (slovbe B = fit[:,:,1]). Returns two matirices, with values of positive slope
 and one with values of negative slope.
