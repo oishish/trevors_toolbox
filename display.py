@@ -4,7 +4,7 @@ display.py
 A module for general functions related to displaying information, for functions and classes related
 to displaying specific kinds of information see visual.py
 
-Last updated July 2016
+Last updated March 2017
 
 by Trevor Arp
 '''
@@ -18,12 +18,131 @@ import matplotlib.colors as colors
 import matplotlib.cm as cm
 from time import sleep
 from os import getcwd as cwd
+from scipy.ndimage import center_of_mass
+from scipy.ndimage.interpolation import shift
 
 from scans import range_from_log
+from fitting import power_law, power_law_fit
 
 #from new_colormaps import _viridis_data, _plasma_data
 
 matplotlib.rcParams["keymap.fullscreen"] = ''
+
+"""
+Initilizes a figure with a specified size based on the number of rows and columns
+"""
+def get_figure(fignum, rows=1, cols=1,
+	fntsize=18,
+	tickfntsize=16,
+    basewidth=6.5,
+    baseheight=5.0,
+    margin=0.09,
+    marginwidth=2.0,
+    marginheight=1.0,
+	fancyfonts=True ):
+	if fancyfonts:
+		fancy_fonts()
+		matplotlib.rcParams.update({'font.size': fntsize})
+		matplotlib.rcParams.update({'axes.labelpad': 0})
+	axes = []
+	fig = plt.figure(fignum, figsize=(cols*basewidth+marginwidth, rows*baseheight+marginheight), facecolor='w')
+	axspec = (rows, cols)
+	for i in range(rows):
+		for j in range(cols):
+			ax = plt.subplot2grid(axspec,(i,j))
+			format_plot_axes(ax, fntsize=fntsize, tickfntsize=tickfntsize)
+			axes.append(ax)
+	if (rows==1 and cols==1):
+		margin = 0.07
+		plt.subplots_adjust(
+		left  = 0.8*margin, # the left side of the subplots of the figure
+		right = 1.0-0.8*margin, # the right side of the subplots of the figure
+		bottom = 1.5*margin, # the bottom of the subplots of the figure
+		top = 1.0-1.5*margin, # the top of the subplots of the figure
+		wspace = 2.7*margin, # the amount of width reserved for blank space between subplots
+		hspace = 2.7*margin # the amount of height reserved for white space between subplots
+		)
+	elif (rows == 2 and cols==2):
+		margin = 0.07
+		plt.subplots_adjust(
+		left  = margin, # the left side of the subplots of the figure
+		right = 1.0-margin, # the right side of the subplots of the figure
+		bottom = margin, # the bottom of the subplots of the figure
+		top = 1.0-margin, # the top of the subplots of the figure
+		wspace = 2.7*margin, # the amount of width reserved for blank space between subplots
+		hspace = 2.7*margin # the amount of height reserved for white space between subplots
+		)
+	else:
+		plt.subplots_adjust(
+		left  = margin, # the left side of the subplots of the figure
+		right = 1.0-0.75*margin, # the right side of the subplots of the figure
+		bottom = 1.25*margin, # the bottom of the subplots of the figure
+		top = 1.0-1.25*margin, # the top of the subplots of the figure
+		wspace = 2*margin, # the amount of width reserved for blank space between subplots
+		hspace = 2*margin # the amount of height reserved for white space between subplots
+		)
+	return axes, fig
+# end get_figure()
+
+'''
+Zooms in on central $percentage area of a 2D figure
+'''
+def zoom_in_center(ax, percentage):
+    ymax, ymin = ax.get_ylim()
+    xmin, xmax = ax.get_xlim()
+    dy = np.abs(ymax - ymin)
+    dx = np.abs(xmax - xmin)
+    y0 = max(ax.get_ylim()) - dy/2
+    x0 = max(ax.get_xlim()) - dx/2
+    sp = np.sqrt(percentage)
+    ax.set_ylim(y0+sp*dy/2, y0-sp*dy/2)
+    ax.set_xlim(x0-sp*dx/2, x0+sp*dx/2)
+# end zoom_in_center
+
+'''
+Centers the data in the middle of the map
+
+$d is a 2D arrawy of data to center
+
+$mode specifies what do do with the points outside the boundaries, passed to
+scipy.ndimage.interpolation.shift, default is wrap
+
+$fillvall if the mode is 'constant' fills out of bounds points with this value
+'''
+def center_2D_data(d, mode='wrap', cval=0.0):
+	rows, cols = d.shape
+	coords = center_of_mass(np.abs(d))
+	dr = rows/2 - coords[0]
+	dc = cols/2 - coords[1]
+	if mode == 'constant':
+		d = shift(d, (dr, dc), mode=mode, cval=0.0)
+	else:
+		d = shift(d, (dr, dc), mode=mode)
+	return d
+# end center_2D_data
+
+'''
+Plots a power law from a point on a 2D map, puts markers on the map
+'''
+def show_powerlaw_points(aximg, axplt, log, x, y, power, d, color=None, showerr=False):
+	if color is None:
+		color=['b','r','m','c']
+	fx = log['Fast Axis']
+	fc = (fx[1]-fx[0])/log['nx']
+	sx = log['Slow Axis']
+	sc = (sx[1]-sx[0])/log['ny']
+	for i in range(len(x)):
+		aximg.plot([fx[0]+fc*x[i]], [sx[0]+sc*y[i]], color[i]+'o')
+		pc = d[y[i],x[i],:]
+		pw = power[y[i],:]
+		params, err = power_law_fit(pw, pc)
+		if showerr:
+			lbl = r"$\gamma = $ "+ str(round(params[1],2)) + r' $\pm$' + str(round(err[1],2))
+		else:
+			lbl = r"$\gamma = $ "+ str(round(params[1],2))
+		axplt.plot(pw, power_law(pw, params[0], params[1], params[2]), color[i]+'-', lw=2 , label=lbl)
+		axplt.plot(pw, pc, color[i]+'o', lw=2)
+# end show_powerlaw_points
 
 '''
 Sets a plot to use a scale bar and hidden axis,
@@ -141,6 +260,35 @@ def colorscale_map(darray, cmin=None, cmax=None , mapname='viridis'):
 	scalarMap = cm.ScalarMappable(norm=cNorm, cmap=cmap)
 	scalarMap.set_array(darray)
 	return cmap, cNorm, scalarMap
+# end colorscale_map
+
+'''
+Returns a discrete colorscale to plot the data on
+
+rngdict is a dictionary of ranges to show with a color scale with labels as keys for example,
+rngdict={"<1/2":(0.0,0.45), "1/2":(0.45,0.55), ">1/2":(0.55,1.0)}, in increasing order
+
+Returns: tick_locations, tick_labels, colorscale, normalization
+'''
+def discrete_colorscale(rngdict, basecolormap='viridis'):
+    labels = []
+    locations = []
+    bounds = []
+    bnds = []
+    for k,v in rngdict.items():
+        labels.append(k)
+        locations.append((v[1]+v[0])/2.0)
+        bnds.append(v[0])
+        bnds.append(v[1])
+    for i in bnds:
+        if i not in bounds:
+            bounds.append(i)
+    bounds.sort()
+    cmap = cm.get_cmap(basecolormap,len(rngdict))
+    norm = colors.BoundaryNorm(bounds, cmap.N)
+    return locations, labels, cmap, norm
+# end discrete_colorscale
+
 
 '''
 DEPRICAITED FUNCTIONS

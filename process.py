@@ -9,7 +9,7 @@ by Trevor Arp
 '''
 import numpy as np
 from os.path import exists, isfile, join
-from utils import indexof, get_locals, find_run
+from utils import indexof, get_locals, find_run, find_savefile
 from timeit import default_timer as timer
 import datetime
 from scipy.ndimage.interpolation import shift as ndshift

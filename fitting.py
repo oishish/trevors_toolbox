@@ -10,6 +10,7 @@ by Trevor Arp
 '''
 import numpy as np
 import scipy as sp
+import warnings
 
 from scipy.optimize import curve_fit as fit
 from scipy.signal import butter, filtfilt
@@ -94,8 +95,10 @@ def symm_exponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_
         t = (x[xstop-1]-x[xstart] )/4.0
         p0=(a, b, t, 0.0)
     try:
-        p, plconv = fit(symm_exp, x[xstart:xstop], y[xstart:xstop],p0=p0)
-        perr = np.sqrt(np.diag(plconv))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p, plconv = fit(symm_exp, x[xstart:xstop], y[xstart:xstop],p0=p0)
+            perr = np.sqrt(np.diag(plconv))
     except Exception as e:
         if p_default is None:
             p = p0
@@ -156,8 +159,10 @@ def double_exponential_fit(x, y, p0=-1, xl=-1, xr=-1, xstart=-1, xstop=-1):
         xr = l/2 # -20
 
     try:
-        pl, plconv = fit(symm_exp, t[xstart:xl], diff[xstart:xl], p0=p0)
-        plerr = np.sqrt(np.diag(plconv))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pl, plconv = fit(symm_exp, t[xstart:xl], diff[xstart:xl], p0=p0)
+            plerr = np.sqrt(np.diag(plconv))
     except Exception as e:
         pl = p0
         plerr = (0,0,0)
@@ -221,9 +226,11 @@ def biexponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_def
         tf_start = ts_start/50.0
         p0 = (np.min(y), np.max(y)/10.0, ts_start, np.max(y), tf_start)
     try:
-        p, plconv = fit(biexponential_pen, x, y, p0=p0)
-        #p, plconv = fit(biexponential, x, y, p0=p0)
-        perr = np.sqrt(np.diag(plconv))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p, plconv = fit(biexponential_pen, x, y, p0=p0)
+            #p, plconv = fit(biexponential, x, y, p0=p0)
+            perr = np.sqrt(np.diag(plconv))
     except Exception as e:
         #print('Error: Could not fit')
         if p_default is None:
@@ -268,8 +275,10 @@ def power_law_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default
         g = 1.0
         p0=(b, g, 0.0)
     try:
-        p, plconv = fit(power_law, x[xstart:xstop], y[xstart:xstop], p0=p0, maxfev=2000)
-        perr = np.sqrt(np.abs(np.diag(plconv)))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p, plconv = fit(power_law, x[xstart:xstop], y[xstart:xstop], p0=p0, maxfev=2000)
+            perr = np.sqrt(np.abs(np.diag(plconv)))
     except Exception as e:
         #print(str(e)) #debug
         if p_default is None:
@@ -317,8 +326,10 @@ def guass_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=Non
         x0 = x[int(len(x)/2)]
         p0=(a, sigma, x0)
     try:
-        p, plconv = fit(guass, x[xstart:xstop], y[xstart:xstop], p0=p0)
-        perr = np.sqrt(np.diag(plconv))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p, plconv = fit(guass, x[xstart:xstop], y[xstart:xstop], p0=p0)
+            perr = np.sqrt(np.diag(plconv))
     except Exception as e:
         if p_default is None:
             p = p0

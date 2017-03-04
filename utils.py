@@ -15,6 +15,7 @@ from datetime import date
 from os.path import abspath as OS_abspath
 from os.path import dirname as OS_dirname
 from os.path import exists as OS_exists
+from os import makedirs
 from os.path import join
 
 '''
@@ -97,6 +98,20 @@ def find_run(rn, directory=None, fileend='_log.log'):
 		return path
 	else:
 		return None
+# end find_run
+
+'''
+Similar to find_run but looks for the processed data savefile, if it doesn't find one it creates it
+'''
+def find_savefile(rn, directory=None):
+	if directory is None:
+		local_values = get_locals()
+		directory = local_values['Processed_datadir']
+	s = rn.split('_')
+	path = join(directory, s[0], s[0] + '_' + s[1], s[0] + '_' + s[1] + '_' + s[2])
+	if not OS_exists(path):
+		makedirs(path)
+	return path
 # end find_run
 
 '''

@@ -27,6 +27,7 @@ Utilities module contains commonly used general purpose functions.
 '''
 import utils
 find_run = utils.find_run
+find_savefile = utils.find_savefile
 
 '''
 Functions for manipulating scans, a few common functions are directly imported
@@ -44,6 +45,7 @@ set_img_ticks = display.set_img_ticks
 scale_bar_plot = display.scale_bar_plot
 format_plot_axes = display.format_plot_axes
 get_viridis = display.get_viridis
+get_figure = display.get_figure
 
 '''
 Contains functions relating to specific visualizations
