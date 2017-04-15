@@ -9,13 +9,15 @@ Last updated March 2017
 by Trevor Arp
 '''
 
-import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+from mpl_toolkits.mplot3d import Axes3D
+
+import numpy as np
 from time import sleep
 from os import getcwd as cwd
 from scipy.ndimage import center_of_mass
@@ -30,6 +32,8 @@ matplotlib.rcParams["keymap.fullscreen"] = ''
 
 """
 Initilizes a figure with a specified size based on the number of rows and columns
+
+One of the plots can be 3D, pass the coordinates to ax3D as a tuple
 """
 def get_figure(fignum, rows=1, cols=1,
 	fntsize=18,
@@ -39,7 +43,8 @@ def get_figure(fignum, rows=1, cols=1,
     margin=0.09,
     marginwidth=2.0,
     marginheight=1.0,
-	fancyfonts=True ):
+	fancyfonts=True,
+	ax3D=None ):
 	if fancyfonts:
 		fancy_fonts()
 		matplotlib.rcParams.update({'font.size': fntsize})
@@ -47,15 +52,24 @@ def get_figure(fignum, rows=1, cols=1,
 	axes = []
 	fig = plt.figure(fignum, figsize=(cols*basewidth+marginwidth, rows*baseheight+marginheight), facecolor='w')
 	axspec = (rows, cols)
+	if ax3D is not None:
+		i3d = ax3D[0]
+		j3d = ax3D[1]
+	else:
+		i3d = -1
+		j3d = -1
 	for i in range(rows):
 		for j in range(cols):
-			ax = plt.subplot2grid(axspec,(i,j))
+			if i == i3d and j == j3d:
+				ax = plt.subplot2grid(axspec,(i,j), projection='3d')
+			else:
+				ax = plt.subplot2grid(axspec,(i,j))
 			format_plot_axes(ax, fntsize=fntsize, tickfntsize=tickfntsize)
 			axes.append(ax)
 	if (rows==1 and cols==1):
 		margin = 0.07
 		plt.subplots_adjust(
-		left  = 0.8*margin, # the left side of the subplots of the figure
+		left  = 1.43*margin, # the left side of the subplots of the figure
 		right = 1.0-0.8*margin, # the right side of the subplots of the figure
 		bottom = 1.5*margin, # the bottom of the subplots of the figure
 		top = 1.0-1.5*margin, # the top of the subplots of the figure

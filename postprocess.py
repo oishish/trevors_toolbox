@@ -136,6 +136,8 @@ $fill is the tau value to fill the points that are filtered out, default (None) 
 
 $min_Amp is the minimum amplitude of the fit function (sum of A,B,C), points less that this are filtered out
 
+$max_slow is the maximum slow timeconstant, points equal to or above it are filtered out
+
 $fracUC is the maximum fractional uncertainty in either tau_fast or tau_slow, if either have a greater
 fractional uncertainty they will be filtered out
 
@@ -145,6 +147,7 @@ returns filtered tau values
 def filter_biexp_delay_cube(t, fit,
     fill=None,
     min_Amp=1.0,
+    max_slow = 100,
     fracUC=2.0
     ):
     if fill is None:
@@ -154,7 +157,7 @@ def filter_biexp_delay_cube(t, fit,
     tauFast = np.zeros((rows, cols))
     for i in range(rows):
         for j in range(cols):
-            if np.abs(fit[i,j,7]/fit[i,j,2])>fracUC or  np.abs(fit[i,j,9]/fit[i,j,4])>fracUC:
+            if np.abs(fit[i,j,7]/fit[i,j,2])>fracUC or np.abs(fit[i,j,9]/fit[i,j,4])>fracUC or np.abs(fit[i,j,2]) > max_slow:
                 tauSlow[i,j] = fill
                 tauFast[i,j] = fill
             else:

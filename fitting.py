@@ -59,8 +59,8 @@ A symmetric bi-exponential function with a fast and slow component
 
 y = A + B*Exp(-|x/tau_slow|) + C*Exp(-|x/tau_fast|)
 '''
-def biexponential(x, A, B, tauS, C, tauF):
-    return A + B*np.exp(-np.abs(x/tauS)) + C*np.exp(-np.abs(x/tauF))
+def biexponential(x, A, B, tauS, C, tauF, t0):
+    return A + B*np.exp(-np.abs((x-t0)/tauS)) + C*np.exp(-np.abs((x-t0)/tauF))
 # end biexponential
 
 
@@ -188,12 +188,12 @@ for the fit
 
 y = A + B*Exp(-|x/tau_slow|) + C*Exp(-|x/tau_fast|)
 '''
-def biexponential_pen(x, A, B, tauS, C, tauF):
+def biexponential_pen(x, A, B, tauS, C, tauF, t0):
     if 1.5*tauF > tauS:
         penalization = 10000.0*tauF
     else:
         penalization = 0.0
-    return A + B*np.exp(-np.abs(x/tauS)) + C*np.exp(-np.abs(x/tauF)) + penalization
+    return A + B*np.exp(-np.abs((x-t0)/tauS)) + C*np.exp(-np.abs((x-t0)/tauF)) + penalization
 # end biexponential
 
 '''
@@ -224,7 +224,7 @@ def biexponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_def
     if p0 == -1:
         ts_start = np.abs(x[0] - x[l-1])/2.0
         tf_start = ts_start/50.0
-        p0 = (np.min(y), np.max(y)/10.0, ts_start, np.max(y), tf_start)
+        p0 = (np.min(y), np.max(y)/10.0, ts_start, np.max(y), tf_start, 0.0)
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -235,11 +235,11 @@ def biexponential_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_def
         #print('Error: Could not fit')
         if p_default is None:
             p = p0
-            perr = (0,0,0,0,0)
+            perr = (0,0,0,0,0,0)
         else:
             p = p_default
             if perr_default is None:
-                perr = (0,0,0,0,0)
+                perr = (0,0,0,0,0,0)
             else:
                 perr = perr_default
     return p, perr
