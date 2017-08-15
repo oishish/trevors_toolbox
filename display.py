@@ -98,6 +98,28 @@ def get_figure(fignum, rows=1, cols=1,
 	return axes, fig
 # end get_figure()
 
+"""
+Fixes the bug where the positive and negative tick labels have an offset
+
+Displaces the positive labels by the offset paramter
+
+Fixes the labels on the x axis is fixX is true, the y axis labels otherwise
+"""
+def fix_label_misalign(ax, offset=-0.0045, fixX=True):
+	if fixX:
+		tks = ax.get_xticklabels()
+		xticks = ax.get_xticks().tolist()
+		for i in range(len(tks)):
+		    if float(xticks[i]) >= 0.0:
+		        tks[i].set_y(offset)
+	else:
+		tks = ax.get_yticklabels()
+		yticks = ax.get_yticks().tolist()
+		for i in range(len(tks)):
+		    if float(yticks[i]) >= 0.0:
+		        tks[i].set_x(offset)
+# ebd fix_label_misalign
+
 '''
 Zooms in on central $percentage area of a 2D figure
 '''
@@ -189,23 +211,24 @@ def scale_bar_plot(ax, img, log, length=2, units=r'$\mu m$', color='w', fontsize
 # end scale_bar_plot
 
 '''
-Set's the default font to the STIX font family
+Defines a standard format for figures and other production quality visualizations, uses helvetical font
+and tex rendering
 '''
-def fancy_fonts():
-	matplotlib.rcParams['mathtext.fontset'] = 'stix'
-	matplotlib.rcParams['font.family'] = 'STIXGeneral'
-#
-
-'''
-Formats the plot axes in a standard format
-$ax is the axes object for the plot, such as plt.gca()
-'''
-def format_plot_axes(ax, fntsize=16, tickfntsize=14):
-	for i in ax.spines.values():
-		i.set_linewidth(2)
-	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')
-	matplotlib.rcParams.update({'font.size': fntsize})
-# end format_plot_axes
+def figure_format(fntsize=14, lw=1.0, labelpad=5):
+	matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
+	matplotlib.rc('text', usetex=True)
+	matplotlib.rcParams['text.latex.preamble'] = [
+	       r'\usepackage{helvet}',    # set the normal font here
+	       r'\usepackage{sansmathfonts}',  # load up the sansmath so that math -> helvet
+	       r'\usepackage{amsmath}'
+	]
+	matplotlib.rcParams.update({'axes.labelpad': labelpad})
+	matplotlib.rcParams.update({'xtick.direction':'out'})
+	matplotlib.rcParams.update({'ytick.direction':'out'})
+	matplotlib.rcParams.update({'xtick.major.width':lw})
+	matplotlib.rcParams.update({'ytick.major.width':lw})
+	matplotlib.rcParams.update({'axes.linewidth':lw})
+# figure_format
 
 '''
 Sets the x and y ticks for a data image based on the log file
@@ -257,6 +280,21 @@ def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None
 	ax.set_ylim(yl[len(yt)-1], yl[0])
 # end set_img_ticks
 
+'''
+Takes a color map and returns a new colormap that only uses the part of it between minval and maxval
+on a scale of 0 to 1
+
+Taken From: http://stackoverflow.com/questions/40929467/how-to-use-and-plot-only-a-part-of-a-colorbar-in-matplotlib
+'''
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=-1):
+    if n == -1:
+        n = cmap.N
+    new_cmap = colors.LinearSegmentedColormap.from_list(
+        'trunc({name},{a:.2f},{b:.2f})'.format(name=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
+# end truncate_colormap
+
 
 '''
 Returns a colormap, Normlization and ScalarMappable for given data
@@ -307,6 +345,29 @@ def discrete_colorscale(rngdict, basecolormap='viridis'):
 '''
 DEPRICAITED FUNCTIONS
 '''
+
+'''
+Formats the plot axes in a standard format
+$ax is the axes object for the plot, such as plt.gca()
+
+DEPRICIATED in favor of figure_format()
+'''
+def format_plot_axes(ax, fntsize=16, tickfntsize=14):
+	for i in ax.spines.values():
+		i.set_linewidth(2)
+	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')
+	matplotlib.rcParams.update({'font.size': fntsize})
+# end format_plot_axes
+
+'''
+Set's the default font to the STIX font family
+
+DEPRICIATED in favor of figure_format()
+'''
+def fancy_fonts():
+	matplotlib.rcParams['mathtext.fontset'] = 'stix'
+	matplotlib.rcParams['font.family'] = 'STIXGeneral'
+#
 
 '''
 DEPRICIATED in favor of viridis

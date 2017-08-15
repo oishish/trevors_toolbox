@@ -158,3 +158,43 @@ def multiprocess2D(func, args_array, ncores=4, display=True):
         print("Computations Completed in: " + str(datetime.timedelta(seconds=dt)))
     return output
 # end multiprocess2D
+
+'''
+Samples a probability distribution using the Metropolis-Hastings Algorithm
+
+Returns an numpy array of N samples of the probabilty distribution
+
+Parameters:
+
+N is the number of samples to generate
+
+PDF is PDF(x), the Probability Density Function to be sampled, should accept one argument
+
+x0=0.0 is the starting value of the markov chain used to generate the samples, set to approximatly the mean
+value of your probability distribution. Set to 0.0 by default
+
+rng=1.0 is the range of innovation for candidate selection, i.e. the next candidate in the Markov chain is
+can = x + random.uniform(-rng,rng), make sure this samples your distribution well, 1.0 by default
+
+'''
+def metropolis_sample(N, PDF, x0=0.0, rng=1.0):
+	vec = np.zeros(N)
+	innov = np.random.uniform(-rng, rng, N) #uniform proposal distribution
+	x = x0
+	vec[0] = x
+	ix = 1
+	i = 0
+	while ix < N:
+		can = x + innov[i] #candidate
+		aprob = min(1.0, PDF(can)/PDF(x)) #acceptance probability
+		u = np.random.uniform(0,1)
+		if u < aprob:
+			x = can
+			vec[ix] = x
+			ix += 1
+		i += 1
+		if i >= N:
+			innov = np.random.uniform(-rng,rng,N)
+			i = 0
+	return vec
+# end metropolis_sample
