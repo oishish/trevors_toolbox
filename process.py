@@ -21,7 +21,23 @@ from fitting import double_exponential_fit
 from fitting import lowpass, compute_shift
 from fitting import lp_cube_rows_cols
 
-from calibration import calib_response, calibrate_power
+from calibration import calib_response, calibrate_power, calibrate_power_all
+
+'''
+A object for plotting a data image, takes a run number and plots
+
+$run_num and $dir are the data set to open, obeying the same conventions as load_run
+'''
+class dataimg():
+    def __init__(self, run_num, directory=''):
+        l, d = load_run(run_num, directory)
+        self.log = l
+        for k,v in list(d.items()):
+            setattr(self,k,v)
+        self.run_num = run_num
+        self.shape = np.shape(self.pci)
+    # end init
+# end dataimg
 
 '''
 Takes a run number and loads the run including the reflection image, the photocurrent image
@@ -83,7 +99,7 @@ def load_run(run_num, directory=''):
         elif exists(file_path + '_' + s +'.npy'):
             data[s] = np.load(file_path + '_' + s +'.npy')
         else:
-            "Error in load_run: Cannot find data file for filetype: " + str(s)
+            print("Error in load_run: Cannot find data file for filetype: " + str(s))
             raise IOError
     return log, data
 # end load_run
@@ -207,7 +223,233 @@ def compute_drR(r, backgnd=None):
 
 '''
 #############################################
+Processing functions for multivariable data runs starting with introduction of hyperDAQ
+#############################################
+'''
+
+'''
+Internal function to handle processing of a scan, call wrapper function ProcessRun
+'''
+def process_scan(data, display=True, stabalize=True, debug=False):
+    log = data.log
+    rn = log["Run Number"]
+    gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
+    dimension = int(log['Scan Dimension'])
+    pci = data.pci*(gain*1.0e9)
+    rfi = data.rfi
+    pwi = data.pow
+
+    # Identify and calibrate axes
+    if dimension == 2: # Scan
+        rows, cols = pci.shape
+        wavelength = round(log['Wavelength'])
+        fast_var = log['Fast Axis Variable']
+        if fast_var == "Power (%)":
+            pwr = calibrate_power_all(rn, pwi, wavelength, display=False)
+            fast = np.mean(pwr, axis=0)
+        else:
+            fast = np.linspace(log['Fast Axis Start'], log['Fast Axis End'], cols)
+
+        slow_var = log['Slow Axis Variable']
+        if slow_var == "Power (%)":
+            slow = calibrate_power(rn, pwi, wavelength, display=display)
+        else:
+            slow = np.linspace(log['Slow Axis Start'], log['Slow Axis End'], rows)
+        pw = calibrate_power_all(rn, pwi, wavelength, display=display)
+        return [fast, slow], pci, rfi, pw, None
+    elif dimension == 3: # Cube
+        # Identify and calibrate axes
+        rows, cols, N = pci.shape
+        wavelength = round(log['Wavelength'])
+        fast_var = log['Fast Axis Variable']
+        if fast_var == "Power (%)":
+            pwr = calibrate_power_all(rn, pwi[:,:,0], wavelength, display=False)
+            fast = np.mean(pwr, axis=0)
+        else:
+            fast = np.linspace(log['Fast Axis Start'], log['Fast Axis End'], cols)
+
+        slow_var = log['Slow Axis Variable']
+        if slow_var == "Power (%)":
+            slow = calibrate_power(rn, pwi[:,:,0], wavelength, display=display)
+        else:
+            slow = np.linspace(log['Slow Axis Start'], log['Slow Axis End'], rows)
+
+        cube_var = log['Cube Axis Variable']
+        if cube_var == "Power (%)":
+            pwr = calibrate_power_all(rn, pwi, wavelength, display=False)
+            cube = np.zeros(N)
+            for k in range(N):
+                cube[k] = np.mean(pwr[:,:,k])
+        else:
+            cube = np.linspace(log['Cube Axis Start'], log['Cube Axis End'], N)
+
+        pw = calibrate_power_all(rn, pwi, wavelength, display=display)
+
+        # Correct images in needed
+        if stabalize:
+            if display:
+                print("Stablizing images")
+            ref = np.abs(pci[:,:,N-1])
+            ref = ref - np.min(ref)
+            ref = ref/np.max(ref)
+            for i in range(0, N-1):
+                m = np.mean(pci[0:25,:,i])
+                mrfi = np.mean(rfi[0:25,:,i])
+                mrfi = np.mean(pw[0:25,:,i])
+                current = np.abs(pci[:,:,i])
+                current = current - np.min(current)
+                current = current/np.max(current)
+                sft = compute_shift(current, ref)
+                pci[:,:,i] = ndshift(pci[:,:,i], sft, cval=m)
+                rfi[:,:,i] = ndshift(rfi[:,:,i], sft, cval=mrfi)
+                pci[:,:,i] = ndshift(pci[:,:,i], sft, cval=m)
+                if debug:
+                    print(i, sft)
+            #
+        #
+
+        # Fit if appropriate
+        if cube_var == "Power (%)" or cube_var == "Delay (ps)":
+            if display:
+                print("Fitting Images")
+                s = str(rows) + 'x' + str(cols) + 'x' + str(N)
+                print("Starting Processing on " + s + " datacube")
+            t0 = timer()
+
+            if cube_var == "Power (%)":
+                fit = np.zeros((rows, cols, 6))
+                power = calibrate_power(rn, pwi, wavelength, display=False)
+                for i in range(rows):
+                    power[i,:] = power[i,:] - np.min(power[i,:])
+                for i in range(rows):
+                    for j in range(cols):
+                        params, err = power_law_fit(power[i,:], pci[i,j,:], p_default=(0,0,0), perr_default=(0,0,0))
+                        fit[i,j,0:3] = params
+                        fit[i,j,3:6] = err
+            else:
+                fit = np.zeros((rows, cols, 8))
+                delay = np.linspace(log["Cube Axis Start"], log["Cube Axis End"], N)
+                for i in range(rows):
+                    for j in range(cols):
+                        params, err = symm_exponential_fit(delay, np.abs(d[i,j,:]), p_default=(0,0,0,0), perr_default=(0,0,0,0))
+                        fit[i,j,0:4] = params
+                        fit[i,j,4:8] = err
+
+            tf = timer()
+            if display:
+                print(" ")
+                dt = tf-t0
+                print("Processing Completed in: " + str(datetime.timedelta(seconds=dt)))
+        else:
+            fit = None
+        print("Got Here")
+        return [fast, slow, cube], pci, rfi, pw, fit
+    else:
+        print("Error: Invalid Scan Dimension")
+
+# end process_scan
+
+
+'''
+ProcessRun loads and processes a run based on a run number, can take a list of run number and will return
+lists of outputs
+
+Parameters:
+$runs is a run number or list of run numbers to process
+$display=True, if true will print out fitting information
+$useCached=True, if True will used a pre-processed version or create one if none exists
+$overwrite=False, is True and useCached=True then runs(s) will re-processed and the file will be overwritten
+$directory=None, is the path to the directory where files can be found, if None will search the default directory
+$stabalize=True, if True will correct for drift between images in Cubes
+
+Returns:
+$log is the log object from the run
+$axes is a list of a 2 or 3 calibrated axes in the order [fast, slow, cube]
+$pci is the calibrated photocurrent image or cube
+$rfi is the raw reflection image or cube
+$fit is a list containing the photocurrent fit for an appropriate cube, None if no appropriate cube
+
+If parameter runs is a list of runs the returned values will be lists of the above for those runs, in order
+'''
+def ProcessRun(runs, display=True, useCached=True, overwrite=False, directory=None, stabalize=True, debug=False):
+    if (type(runs) == str):
+        rn = runs
+        if useCached:
+            savefile = find_savefile(rn, directory=directory)
+        else:
+            savefile = None
+        if savefile is not None and exists(join(savefile, rn+"_data.npz")) and not overwrite:
+            d = dataimg(rn)
+            log = d.log
+            files = np.load(join(savefile, rn+"_data.npz"))
+            axes = files['axes']
+            pci = files['pci']
+            rfi = files['rfi']
+            pw = files['pw']
+            fit = files['fit']
+        else:
+            d = dataimg(rn)
+            log = d.log
+            if 'Scan Dimension' in log:
+                axes, pci, rfi, pw, fit = process_scan(d, display=display, debug=debug)
+                if useCached and savefile is not None:
+                    fname = join(savefile, rn + "_data")
+                    np.savez(fname, axes=axes, pci=pci, rfi=rfi, pw=pw, fit=fit)
+            else:
+                print("Error: Pre-hyperDAQ run requires specialized function")
+                return None
+        return log, axes, pci, rfi, pw, fit
+    elif (type(runs) == list):
+        log = []
+        axes = []
+        pci = []
+        rfi = []
+        pw = []
+        fit = []
+        for i in range(len(runs)):
+            rn = runs
+            if useCached:
+                savefile = find_savefile(rn, directory=directory)
+            else:
+                savefile = None
+            if savefile is not None and exists(join(savefile, rn+"_data.npz")) and not overwrite:
+                d = dataimg(rn)
+                files = np.load(join(savefile, rn+"_data.npz"))
+                log.append(d.log)
+                axes.append(files['axes'])
+                pci.append(files['pci'])
+                rfi.append(files['rfi'])
+                pw.append(files['pw'])
+                fit.append(files['fit'])
+            else:
+                d = dataimg(rn)
+                log1 = d.log
+                if 'Scan Dimension' in log:
+                    axes1, pci1, rfi1, pw1, fit1 = process_scan(d, display=display, stabalize=stabalize, debug=debug)
+                    log.append(log1)
+                    axes.append(axes1)
+                    pci.append(pci1)
+                    rfi.append(rfi1)
+                    pw.append(pw1)
+                    fit.append(fit1)
+                    if useCached and savefile is not None:
+                        fname = join(savefile, rn + "_data")
+                        np.savez(fname, axes=axes1, pci=pci1, rfi=rfi1, fit=fit1)
+                else:
+                    print("Error: Pre-hyperDAQ run requires specialized function")
+                    return None
+        return log, axes, pci, rfi, pw, fit
+    else:
+        print("Error: parameter runs is not a strong or list of strings")
+        return None
+# end ProcessRun
+
+
+'''
+#############################################
 Instruction Set Processing Scripts
+
+DEPRICIATED after 10/2017 due to introcution of hyperDAQ
 #############################################
 
 Generic Processing for the instruction sets, name of function is same as instruction set

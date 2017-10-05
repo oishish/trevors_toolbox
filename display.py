@@ -170,7 +170,15 @@ def show_powerlaw_points(aximg, axplt, log, x, y, power, d, color=None, showerr=
 	for i in range(len(x)):
 		aximg.plot([fx[0]+fc*x[i]], [sx[0]+sc*y[i]], color[i]+'o')
 		pc = d[y[i],x[i],:]
-		pw = power[y[i],:]
+		if len(power.shape) == 1:
+			pw = power[:]
+		elif len(power.shape) == 2:
+			pw = power[y[i],:]
+		elif len(power.shape) == 3:
+			pw = power[y[i], x[i], :]
+		else:
+			print("Error show_powerlaw_points: Invalid Power Data")
+			return
 		params, err = power_law_fit(pw, pc)
 		if showerr:
 			lbl = r"$\gamma = $ "+ str(round(params[1],2)) + r' $\pm$' + str(round(err[1],2))
