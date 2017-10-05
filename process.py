@@ -8,20 +8,18 @@ Last updated February 2016
 by Trevor Arp
 '''
 import numpy as np
-from os.path import exists, isfile, join
-from utils import indexof, get_locals, find_run, find_savefile
+from os.path import exists, join
+from utils import indexof, find_run, find_savefile
 from timeit import default_timer as timer
 import datetime
 from scipy.ndimage.interpolation import shift as ndshift
 
-from scans import range_from_log
 from fitting import power_law_fit
 from fitting import symm_exponential_fit, biexponential_fit
-from fitting import double_exponential_fit
 from fitting import lowpass, compute_shift
 from fitting import lp_cube_rows_cols
 
-from calibration import calib_response, calibrate_power, calibrate_power_all
+from calibration import calibrate_power, calibrate_power_all
 
 '''
 A object for plotting a data image, takes a run number and plots
@@ -32,7 +30,7 @@ class dataimg():
     def __init__(self, run_num, directory=''):
         l, d = load_run(run_num, directory)
         self.log = l
-        for k,v in list(d.items()):
+        for k, v in list(d.items()):
             setattr(self,k,v)
         self.run_num = run_num
         self.shape = np.shape(self.pci)
