@@ -75,13 +75,19 @@ def load_run(run_num, directory=''):
             k = s[0]
             v = s[1]
             try:
-                log[k] = float(v)
+                if '_' in v:
+                    log[k] = str(v)
+                else:
+                    log[k] = float(v)
             except ValueError:
                 log[k] = str(v).strip()
         elif len(s) > 2:
             k = s[0]
             v = s[1:len(s)]
-            log[k] = str(v).strip()
+            if k == 'Start Time':
+                log[k] = str(line.split('e:')[1])
+            else:
+                log[k] = str(v).strip()
     log['Fast Axis'] = (log['Fast Axis Start'], log['Fast Axis End'])
     log['Slow Axis'] = (log['Slow Axis Start'], log['Slow Axis End'])
     log['Source/Drain'] = (log['Source/Drain Start'], log['Source/Drain End'])
@@ -214,7 +220,7 @@ if None (default) it is an (N/10, M/10) rectangle in the lower left corner of a 
 def compute_drR(r, backgnd=None):
     if backgnd == None:
         rows, cols = np.shape(r)
-        backgnd = (0, cols/10, 9*rows/10, rows)
+        backgnd = (int(0), int(cols/10), int(9*rows/10), int(rows))
     R = np.mean(r[backgnd[2]:backgnd[3],backgnd[0]:backgnd[1]])
     return (r-R)/R
 # end compute drR
@@ -272,7 +278,7 @@ def process_scan(data, display=True, stabalize=True, debug=False):
         else:
             slow = np.linspace(log['Slow Axis Start'], log['Slow Axis End'], rows)
 
-        cube_var = log['Cube Axis Variable']
+        cube_var = log['Cube Axis']
         if cube_var == "Power (%)":
             pwr = calibrate_power_all(rn, pwi, wavelength, display=False)
             cube = np.zeros(N)
@@ -293,14 +299,14 @@ def process_scan(data, display=True, stabalize=True, debug=False):
             for i in range(0, N-1):
                 m = np.mean(pci[0:25,:,i])
                 mrfi = np.mean(rfi[0:25,:,i])
-                mrfi = np.mean(pw[0:25,:,i])
+                mpwi = np.mean(pwi[0:25,:,i])
                 current = np.abs(pci[:,:,i])
                 current = current - np.min(current)
                 current = current/np.max(current)
                 sft = compute_shift(current, ref)
                 pci[:,:,i] = ndshift(pci[:,:,i], sft, cval=m)
                 rfi[:,:,i] = ndshift(rfi[:,:,i], sft, cval=mrfi)
-                pci[:,:,i] = ndshift(pci[:,:,i], sft, cval=m)
+                pwi[:,:,i] = ndshift(pwi[:,:,i], sft, cval=mpwi)
                 if debug:
                     print(i, sft)
             #
@@ -340,7 +346,6 @@ def process_scan(data, display=True, stabalize=True, debug=False):
                 print("Processing Completed in: " + str(datetime.timedelta(seconds=dt)))
         else:
             fit = None
-        print("Got Here")
         return [fast, slow, cube], pci, rfi, pw, fit
     else:
         print("Error: Invalid Scan Dimension")
@@ -389,7 +394,7 @@ def ProcessRun(runs, display=True, useCached=True, overwrite=False, directory=No
             d = dataimg(rn)
             log = d.log
             if 'Scan Dimension' in log:
-                axes, pci, rfi, pw, fit = process_scan(d, display=display, debug=debug)
+                axes, pci, rfi, pw, fit = process_scan(d, display=display, stabalize=stabalize, debug=debug)
                 if useCached and savefile is not None:
                     fname = join(savefile, rn + "_data")
                     np.savez(fname, axes=axes, pci=pci, rfi=rfi, pw=pw, fit=fit)
@@ -405,7 +410,7 @@ def ProcessRun(runs, display=True, useCached=True, overwrite=False, directory=No
         pw = []
         fit = []
         for i in range(len(runs)):
-            rn = runs
+            rn = runs[i]
             if useCached:
                 savefile = find_savefile(rn, directory=directory)
             else:
@@ -646,9 +651,8 @@ def Space_Power_Cube(run,
     ):
 
     log = run.log
-    rn = log['Run Number']
+    rn = log['Run Number'].strip()
 
-    # If it hasn't already been saved to the savefile
     if savefile is not None and exists(join(savefile, rn+"_processed.npz")) and not overwrite:
         files = np.load(join(savefile, rn+"_processed.npz"))
         power = files['power']

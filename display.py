@@ -223,19 +223,21 @@ Defines a standard format for figures and other production quality visualization
 and tex rendering
 '''
 def figure_format(fntsize=14, lw=1.0, labelpad=5):
-	matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
-	matplotlib.rc('text', usetex=True)
-	matplotlib.rcParams['text.latex.preamble'] = [
-	       r'\usepackage{helvet}',    # set the normal font here
-	       r'\usepackage{sansmathfonts}',  # load up the sansmath so that math -> helvet
-	       r'\usepackage{amsmath}'
-	]
+	matplotlib.rc('font', **{'size':fntsize}) # Temporary Workaround
+	# matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
+	# matplotlib.rc('text', usetex=True)
+	# matplotlib.rcParams['text.latex.preamble'] = [
+	#        r'\usepackage{helvet}',    # set the normal font here
+	#        r'\usepackage{sansmathfonts}',  # load up the sansmath so that math -> helvet
+	#        r'\usepackage{amsmath}'
+	# ]
 	matplotlib.rcParams.update({'axes.labelpad': labelpad})
 	matplotlib.rcParams.update({'xtick.direction':'out'})
 	matplotlib.rcParams.update({'ytick.direction':'out'})
 	matplotlib.rcParams.update({'xtick.major.width':lw})
 	matplotlib.rcParams.update({'ytick.major.width':lw})
 	matplotlib.rcParams.update({'axes.linewidth':lw})
+	matplotlib.rcParams.update({'image.interpolation':'bilinear'})
 # figure_format
 
 '''
