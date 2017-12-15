@@ -55,15 +55,15 @@ hbar_eV = 6.582119514e-16 # eV s
 '''
 The Density of States for Graphene
 '''
-def DOS_Graphene(E):
-    return (2*G_Ac/(np.pi*G_vf**2))*np.abs(E)
+def DOS_Graphene(E, E0=0.0):
+    return (2*G_Ac/(np.pi*G_vf**2))*np.abs(E-E0)
 #
 
 '''
 The Fermi-dirac distributions as a function of energy and temperature
 '''
-def f_fd(E, T):
-    return 1/(np.exp(E/(kb_eV*T)) + 1)
+def f_fd(E, T, E0=0.0):
+    return 1/(np.exp(np.abs(E-E0)/(kb_eV*T)) + 1)
 #
 
 '''

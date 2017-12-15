@@ -234,7 +234,7 @@ Processing functions for multivariable data runs starting with introduction of h
 '''
 Internal function to handle processing of a scan, call wrapper function ProcessRun
 '''
-def process_scan(data, display=True, stabalize=True, debug=False):
+def process_scan(data, display=True, stabalize=True, debug=False, preprocessPCI=None, preprocessRFI=None):
     log = data.log
     rn = log["Run Number"]
     gain = log['Pre-Amp Gain']*(log['Lock-In Gain']/1000.0)
@@ -242,6 +242,26 @@ def process_scan(data, display=True, stabalize=True, debug=False):
     pci = data.pci*(gain*1.0e9)
     rfi = data.rfi
     pwi = data.pow
+
+    if preprocessRFI is not None:
+        if dimension == 2:
+            rfi = preprocessRFI(rfi)
+        elif dimension == 3:
+            rows, cols, N = rfi.shape
+            for i in range(N):
+                rfi[:,:,i] = preprocessRFI(rfi[:,:,i])
+        else:
+            print("Error: Invalid Scan Dimension")
+
+    if preprocessPCI is not None:
+        if dimension == 2:
+            pci = preprocessPCI(pci)
+        elif dimension == 3:
+            rows, cols, N = pci.shape
+            for i in range(N):
+                pci[:,:,i] = preprocessPCI(pci[:,:,i])
+        else:
+            print("Error: Invalid Scan Dimension")
 
     # Identify and calibrate axes
     if dimension == 2: # Scan
@@ -335,7 +355,7 @@ def process_scan(data, display=True, stabalize=True, debug=False):
                 delay = np.linspace(log["Cube Axis Start"], log["Cube Axis End"], N)
                 for i in range(rows):
                     for j in range(cols):
-                        params, err = symm_exponential_fit(delay, np.abs(d[i,j,:]), p_default=(0,0,0,0), perr_default=(0,0,0,0))
+                        params, err = symm_exponential_fit(delay, np.abs(pci[i,j,:]), p_default=(0,0,0,0), perr_default=(0,0,0,0))
                         fit[i,j,0:4] = params
                         fit[i,j,4:8] = err
 
@@ -364,6 +384,7 @@ $useCached=True, if True will used a pre-processed version or create one if none
 $overwrite=False, is True and useCached=True then runs(s) will re-processed and the file will be overwritten
 $directory=None, is the path to the directory where files can be found, if None will search the default directory
 $stabalize=True, if True will correct for drift between images in Cubes
+$preprocessRFI and $preprocessPCI are functions to run on raw reflection or photocurrent images before they are calibrated or processed, in None no preprocessing is done
 
 Returns:
 $log is the log object from the run
@@ -374,7 +395,7 @@ $fit is a list containing the photocurrent fit for an appropriate cube, None if 
 
 If parameter runs is a list of runs the returned values will be lists of the above for those runs, in order
 '''
-def ProcessRun(runs, display=True, useCached=True, overwrite=False, directory=None, stabalize=True, debug=False):
+def ProcessRun(runs, display=True, useCached=True, overwrite=False, directory=None, stabalize=True, debug=False, preprocessPCI=None, preprocessRFI=None):
     if (type(runs) == str):
         rn = runs
         if useCached:
@@ -394,7 +415,7 @@ def ProcessRun(runs, display=True, useCached=True, overwrite=False, directory=No
             d = dataimg(rn)
             log = d.log
             if 'Scan Dimension' in log:
-                axes, pci, rfi, pw, fit = process_scan(d, display=display, stabalize=stabalize, debug=debug)
+                axes, pci, rfi, pw, fit = process_scan(d, display=display, stabalize=stabalize, debug=debug, preprocessPCI=preprocessPCI, preprocessRFI=preprocessRFI)
                 if useCached and savefile is not None:
                     fname = join(savefile, rn + "_data")
                     np.savez(fname, axes=axes, pci=pci, rfi=rfi, pw=pw, fit=fit)
@@ -1035,7 +1056,7 @@ def Space_Bias_Cube(run,
         #
 
         if savefile is not None:
-            fname = join(savefile, rn + "_processed")
+            fname = join(savefile, rn.strip() + "_processed")
             np.savez(fname, bias=bias, drR=drR, d=d)
     return bias, drR, d
 # end fit_power_cube

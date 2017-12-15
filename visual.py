@@ -46,10 +46,10 @@ class CubeFigure(object):
 
 		self.ix = 1
 		if vrange is not None:
-			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=get_viridis(), vmin=vrange[0], vmax=vrange[1])
+			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap='viridis', vmin=vrange[0], vmax=vrange[1])
 			self.autoZ = False
 		else:
-			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=get_viridis())
+			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap='viridis')
 			self.autoZ = True
 		self.cbar = self.fig.colorbar(self.img)
 

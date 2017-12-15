@@ -179,12 +179,12 @@ def show_powerlaw_points(aximg, axplt, log, x, y, power, d, color=None, showerr=
 		else:
 			print("Error show_powerlaw_points: Invalid Power Data")
 			return
-		params, err = power_law_fit(pw, pc)
+		params, err = power_law_fit(pw-np.min(pw), pc)
 		if showerr:
 			lbl = r"$\gamma = $ "+ str(round(params[1],2)) + r' $\pm$' + str(round(err[1],2))
 		else:
 			lbl = r"$\gamma = $ "+ str(round(params[1],2))
-		axplt.plot(pw, power_law(pw, params[0], params[1], params[2]), color[i]+'-', lw=2 , label=lbl)
+		axplt.plot(pw, power_law(pw-np.min(pw), params[0], params[1], params[2]), color[i]+'-', lw=2 , label=lbl)
 		axplt.plot(pw, pc, color[i]+'o', lw=2)
 # end show_powerlaw_points
 
