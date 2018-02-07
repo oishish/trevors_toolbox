@@ -15,11 +15,14 @@ import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
 
 import numpy as np
 from time import sleep
 from os import getcwd as cwd
+
 from scipy.ndimage import center_of_mass
 from scipy.ndimage.interpolation import shift
 
@@ -29,6 +32,149 @@ from fitting import power_law, power_law_fit
 #from new_colormaps import _viridis_data, _plasma_data
 
 matplotlib.rcParams["keymap.fullscreen"] = ''
+
+'''
+A class to assist in the layout of figures, handeling the conversion from matplotlibs tricky
+0 to 1 units to acutal physical units in inches.
+
+Will also generate figures and axes of various kinds from specifications given in inches
+'''
+class figure_inches():
+    '''
+    Initilizer, takes the acutal size of the figure in inches
+    '''
+    def __init__(self, name, xinches, yinches):
+        self.xinches = xinches
+        self.yinches = yinches
+        self.r = yinches/xinches
+        self.name = name
+        self.fig = plt.figure(self.name, figsize=(self.xinches, self.yinches), facecolor='w')
+    # end init
+
+    '''
+    Returns a figures with the physical size given
+    '''
+    def get_fig(self):
+        return self.fig
+    # end make_figure
+
+    '''
+    Makes and returns axes with coordinates [left, bottom, width, height] in inches
+    '''
+    def make_axes(self, spec, zorder=1):
+        plt.figure(self.name)
+        return plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches], zorder=zorder)
+    # make_axes
+
+    '''
+    Makes and returns two overlaid axes, with two y axes sharing the same x-axis with
+    coordinates [left, bottom, width, height] in inches
+
+    Note: the first axes returned (the left y-axis) is "on top" and provides the x-axis
+
+    Left and right y-axes can be colored differently
+    '''
+    def make_dualy_axes(self, spec, color_left='k', color_right='k', zorder=1):
+        plt.figure(self.name)
+        ax0 = plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches])
+        ax0.axis('off')
+
+        axl = plt.axes([spec[0]+1, spec[0]+1, spec[0]+1, spec[0]+1], zorder=zorder+1)
+        axl.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axl.patch.set_alpha(0)
+        axl.tick_params('y', colors=color_left)
+        axl.spines['left'].set_color(color_left)
+        axl.spines['right'].set_color(color_right)
+
+        axr = plt.axes([spec[0]+2, spec[0]+2, spec[0]+2, spec[0]+2], zorder=zorder)
+        axr.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axr.patch.set_alpha(0)
+        axr.xaxis.set_visible(False)
+        axr.yaxis.tick_right()
+        axr.yaxis.set_label_position("right")
+        axr.tick_params('y', colors=color_right)
+        return axl, axr
+    # make_dualy_axes
+
+    '''
+    Makes and returns two overlaid axes, with two x axes sharing the same y-axis with
+    coordinates [left, bottom, width, height] in inches
+
+    Note: the first axes returned (the bottom x-axis) is "on top" and provides the y-axis
+
+    Top and bottom x-axes can be colored differently
+    '''
+    def make_dualx_axes(self, spec, color_bottom='k', color_top='k', zorder=1):
+        plt.figure(self.name)
+        ax0 = plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches])
+        ax0.axis('off')
+
+        axb = plt.axes([spec[0]+1, spec[0]+1, spec[0]+1, spec[0]+1], zorder=zorder+1)
+        axb.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axb.patch.set_alpha(0)
+        axb.tick_params('x', colors=color_bottom)
+        axb.spines['bottom'].set_color(color_bottom)
+        axb.spines['top'].set_color(color_top)
+
+        axt = plt.axes([spec[0]+2, spec[0]+2, spec[0]+2, spec[0]+2], zorder=zorder)
+        axt.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axt.patch.set_alpha(0)
+        axt.yaxis.set_visible(False)
+        axt.xaxis.tick_top()
+        axt.xaxis.set_label_position("top")
+        axt.tick_params('x', colors=color_top)
+        return axb, axt
+    # make_dualx_axes
+
+    '''
+    Makes and returns four overlaid axes corresponding to each
+    coordinates [left, bottom, width, height] in inches
+
+    Note: the first axis returned (the left y-axis) is "on top"
+
+    The return order if left, right, bottom, top axis
+    '''
+    def make_dualxy_axes(self, spec, color_bottom='k', color_top='k', color_left='k', color_right='k', zorder=1):
+        plt.figure(self.name)
+        ax0 = plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches])
+        ax0.axis('off')
+
+        axl = plt.axes([spec[0]+4, spec[0]+4, spec[0]+4, spec[0]+4], zorder=zorder+3)
+        axl.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axl.patch.set_alpha(0)
+        axl.xaxis.set_visible(False)
+        axl.tick_params('y', colors=color_left)
+        axl.spines['left'].set_color(color_left)
+        axl.spines['right'].set_color(color_right)
+        axl.spines['top'].set_color(color_top)
+        axl.spines['bottom'].set_color(color_bottom)
+
+        axr = plt.axes([spec[0]+3, spec[0]+3, spec[0]+3, spec[0]+3], zorder=zorder+2)
+        axr.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axr.patch.set_alpha(0)
+        axr.xaxis.set_visible(False)
+        axr.yaxis.tick_right()
+        axr.yaxis.set_label_position("right")
+        axr.tick_params('y', colors=color_right)
+
+        axb = plt.axes([spec[0]+1, spec[0]+1, spec[0]+1, spec[0]+1], zorder=zorder+1)
+        axb.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axb.patch.set_alpha(0)
+        axb.yaxis.set_visible(False)
+        axb.xaxis.tick_bottom()
+        axb.xaxis.set_label_position("bottom")
+        axb.tick_params('x', colors=color_bottom)
+
+        axt = plt.axes([spec[0]+2, spec[0]+2, spec[0]+2, spec[0]+2], zorder=zorder)
+        axt.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
+        axt.patch.set_alpha(0)
+        axt.yaxis.set_visible(False)
+        axt.xaxis.tick_top()
+        axt.xaxis.set_label_position("top")
+        axt.tick_params('x', colors=color_top)
+        return axl, axr, axb, axt
+    # make_dualx_axes
+# end figure_inches
 
 """
 Initilizes a figure with a specified size based on the number of rows and columns
@@ -219,8 +365,7 @@ def scale_bar_plot(ax, img, log, length=2, units=r'$\mu m$', color='w', fontsize
 # end scale_bar_plot
 
 '''
-Defines a standard format for figures and other production quality visualizations, uses helvetical font
-and tex rendering
+Defines a standard format for "notebook" figures and basic visualizations
 '''
 def figure_format(fntsize=14, lw=1.0, labelpad=5):
 	matplotlib.rc('font', **{'size':fntsize}) # Temporary Workaround
@@ -239,6 +384,26 @@ def figure_format(fntsize=14, lw=1.0, labelpad=5):
 	matplotlib.rcParams.update({'axes.linewidth':lw})
 	matplotlib.rcParams.update({'image.interpolation':'bilinear'})
 # figure_format
+
+'''
+Defines a standard format for paper figures and other production quality visualizations,
+uses helvetical font and tex rendering
+'''
+def paper_figure_format(fntsize=15):
+	matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
+	matplotlib.rc('text', usetex=True)
+	matplotlib.rcParams['text.latex.preamble'] = [
+	       r'\usepackage{helvet}',    # set the normal font here
+	       r'\usepackage{sansmathfonts}',  # load up the sansmath so that math -> helvet
+	       r'\usepackage{amsmath}'
+	]
+	matplotlib.rcParams.update({'axes.labelpad': 0})
+	matplotlib.rcParams.update({'xtick.direction':'out'})
+	matplotlib.rcParams.update({'ytick.direction':'out'})
+	matplotlib.rcParams.update({'xtick.major.width':1.0})
+	matplotlib.rcParams.update({'ytick.major.width':1.0})
+	matplotlib.rcParams.update({'axes.linewidth':1.0})
+# end paper_figure_format
 
 '''
 Sets the x and y ticks for a data image based on the log file

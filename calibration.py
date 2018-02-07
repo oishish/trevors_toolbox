@@ -17,7 +17,8 @@ InGaAs_calibration_file = local_values['InGaAs_calibration_file']
 Power_calibration_dir = local_values['Power_calibration_dir']
 
 '''
-Calibrates data by dividing by the responsivity for a single given parameter
+Returns the responsivity factor the responsivity for a single given parameter, data should be
+divided by the responsivity
 
 For example, for the InGaAs detector responsivity varies with wavelength, so this divides by
 the responsivity for that wavelength
@@ -26,7 +27,7 @@ Linear interpolation between the four nearest data points, if point is not in ca
 
 Calibration file should contain two columns, the first is the parameter (sorted) the second is the responsivity
 '''
-def calib_response(data, param, calibration=InGaAs_calibration_file):
+def calib_responsivity(param, calibration=InGaAs_calibration_file):
     c = np.loadtxt(calibration)
     rows, cols = np.shape(c)
     param = float(param)
@@ -41,8 +42,26 @@ def calib_response(data, param, calibration=InGaAs_calibration_file):
     else:
         i = int(np.argwhere(c[:,0]==param))
         resp = c[i,1]
-    return data/float(resp)
+    return float(resp)
 #
+
+'''
+Calibrates data by dividing by the responsivity for a single given parameter, wrapper for
+calib_resposivity
+
+For example, for the InGaAs detector responsivity varies with wavelength, so this divides by
+the responsivity for that wavelength
+
+Linear interpolation between the four nearest data points, if point is not in calibration file
+
+Calibration file should contain two columns, the first is the parameter (sorted) the second is the responsivity
+'''
+def calib_response(data, param, calibration=InGaAs_calibration_file):
+    resp = calib_responsivity(param, calibration=calibration)
+    return data/resp
+# end calib_response
+
+
 
 '''
 Calibrates a power image or cube into a one or 2D array useful for fitting
@@ -80,6 +99,9 @@ def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):
     fit[0] = fit[0]*geo_accept
     fit[1] = fit[1]*geo_accept
 
+    resp = calib_responsivity(wavelength)
+    resp1250 = calib_responsivity(1250.0)
+
     # Average Power
     if len(power.shape) > 2:
         rows, cols, N = power.shape
@@ -91,12 +113,12 @@ def calibrate_power(rn, power, wavelength, geo_accept=0.35, display=True):
         p = np.zeros((rows,N))
         for i in range(N):
             p[:,i] = np.mean(power[:,:,i], axis=1) - bg
-            p[:,i] = calib_response(p[:,i], wavelength)
+            p[:,i] = p[:,i]*(resp1250/resp)
             p[:,i] = fit[0]*p[:,i] + fit[1]
     else:
         rows, cols = power.shape
         p = np.mean(power, axis=1)
-        p = calib_response(p, wavelength)
+        p = p*(resp1250/resp)
         p = fit[0]*p + fit[1]
     return p
 # end calibrate_power
@@ -136,7 +158,9 @@ def calibrate_power_all(rn, power, wavelength, geo_accept=0.35, display=True):
     fit = np.polyfit(d[:,1], d[:,0], 1)
     fit[0] = fit[0]*geo_accept
     fit[1] = fit[1]*geo_accept
-    p = calib_response(power, wavelength)
+    resp = calib_responsivity(wavelength)
+    resp1250 = calib_responsivity(1250.0)
+    p = power*(resp1250/resp)
     p = fit[0]*p + fit[1]
     return p
-# end calibrate_power
+# end calibrate_power_all

@@ -56,7 +56,7 @@ def load_run(run_num, directory=''):
     elif find_run(run_num) is not None:
         path = find_run(run_num)
     else:
-        print('Error load_run : Could not open files')
+        print('Error load_run : Could not open files :' + str(run_num))
         raise IOError
     #
     file_path = join(path, run_num)
