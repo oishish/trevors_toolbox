@@ -6,6 +6,8 @@ Trevor's VIEWing Software
 
 An event based viewer for data
 
+DEPRICATED
+
 '''
 
 import numpy as np

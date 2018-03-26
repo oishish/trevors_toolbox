@@ -67,6 +67,14 @@ class figure_inches():
     # make_axes
 
     '''
+    Makes and returns axes with coordinates [left, bottom, width, height] in inches. With a 3D projection
+    '''
+    def make_3daxes(self, spec, zorder=1):
+        plt.figure(self.name)
+        return plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches], zorder=zorder, projection='3d')
+    # make_axes
+
+    '''
     Makes and returns two overlaid axes, with two y axes sharing the same x-axis with
     coordinates [left, bottom, width, height] in inches
 
@@ -390,19 +398,20 @@ Defines a standard format for paper figures and other production quality visuali
 uses helvetical font and tex rendering
 '''
 def paper_figure_format(fntsize=15):
-	matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
-	matplotlib.rc('text', usetex=True)
-	matplotlib.rcParams['text.latex.preamble'] = [
-	       r'\usepackage{helvet}',    # set the normal font here
-	       r'\usepackage{sansmathfonts}',  # load up the sansmath so that math -> helvet
-	       r'\usepackage{amsmath}'
-	]
-	matplotlib.rcParams.update({'axes.labelpad': 0})
-	matplotlib.rcParams.update({'xtick.direction':'out'})
-	matplotlib.rcParams.update({'ytick.direction':'out'})
-	matplotlib.rcParams.update({'xtick.major.width':1.0})
-	matplotlib.rcParams.update({'ytick.major.width':1.0})
-	matplotlib.rcParams.update({'axes.linewidth':1.0})
+    matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
+    matplotlib.rc('text', usetex=True)
+    matplotlib.rcParams['text.latex.preamble'] = [
+        r'\usepackage{helvet}',    # set the normal font here
+        r'\usepackage{sansmathfonts}',  # load up the sansmath so that math -> helvet
+        r'\usepackage{amsmath}'
+    ]
+    matplotlib.rcParams.update({'axes.labelpad': 0})
+    matplotlib.rcParams.update({'xtick.direction':'out'})
+    matplotlib.rcParams.update({'ytick.direction':'out'})
+    matplotlib.rcParams.update({'xtick.major.width':1.0})
+    matplotlib.rcParams.update({'ytick.major.width':1.0})
+    matplotlib.rcParams.update({'axes.linewidth':1.0})
+    matplotlib.rcParams.update({'image.interpolation':'bilinear'})
 # end paper_figure_format
 
 '''
