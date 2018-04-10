@@ -3,7 +3,7 @@ utils.py
 
 A module for various general use functions
 
-Last updated February 2016
+Last updated April 2018
 
 by Trevor Arp
 '''
@@ -121,3 +121,12 @@ def date_from_rn(rn):
 	s = rn.split('_')
 	return date(int(s[0]), int(s[1]), int(s[2]))
 # end date_from_rn
+
+'''
+Get the arguments of the maximum of a 2D array
+'''
+def argmax2D(d):
+	ix = np.argmax(d)
+	r, c = np.unravel_index(ix, d.shape)
+	return r, c
+#

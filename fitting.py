@@ -411,6 +411,18 @@ def normfft(d):
 # end normfft
 
 '''
+Returns a normalized fast fourier transform of the given data $d and the frequency samples for
+a given evenly sampled time series $t
+'''
+def normfft_freq(t, d):
+    n = len(d)
+    f = fft(d)
+    f = 2.0*np.abs(f)/n
+    freq = fftfreq(n, d=np.mean(np.diff(t)))
+    return freq, f
+# end normfft
+
+'''
 Takes a two dimensional array of data $data and fits it to some function $func where func is
 define such that data = func(X, *args) where x = X[0,:], y = X[1,:], the parameters $x and $y
 define the ranges over which the coordinates range for data, i.e. $data = func(($x, $y), *p0)

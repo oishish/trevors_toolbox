@@ -10,7 +10,8 @@ by Trevor Arp
 '''
 import numpy as np
 import scipy as sp
-from multiprocessing import Pool
+#from multiprocessing import Pool
+from pathos.multiprocessing import ProcessingPool as Pool
 from timeit import default_timer as timer
 from scipy.integrate import quad
 import datetime
