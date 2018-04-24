@@ -10,6 +10,7 @@ by Trevor Arp
 
 import numpy as np
 from scipy.ndimage.interpolation import shift
+from scipy.signal import argrelextrema
 
 from datetime import date
 from os.path import abspath as OS_abspath
@@ -129,4 +130,42 @@ def argmax2D(d):
 	ix = np.argmax(d)
 	r, c = np.unravel_index(ix, d.shape)
 	return r, c
-#
+# end argmax2D
+
+'''
+Get the arguments $N largest local maxima (in descending order) in an array $d
+
+Parameter $order (default 5) is the number of points that the maxima has to be greater than to qualify
+'''
+def argmaxima(d, N, order=5, display_warning=True):
+	local_maxes = argrelextrema(d, np.greater, order=order)
+	local_maxes = local_maxes[0]
+	local_max_values = d[local_maxes]
+	srt = np.argsort(local_max_values)
+	n = local_maxes.size
+	if n < N and display_warning:
+		print("Warning utils.argmaxima: Number of maxima found is less than requested number")
+	args = np.zeros(N).astype(int)
+	for i in range(N):
+		args[i] = local_maxes[srt[n-1-i]]
+	return args
+# end argmaxima
+
+'''
+Get the arguments $N largest local minima (in ascending order of value) in an array $d
+
+Parameter $order (default 5) is the number of points that the maxima has to be greater than to qualify
+'''
+def argminima(d, N, order=5, display_warning=True):
+	local_mins = argrelextrema(d, np.less, order=order)
+	local_mins = local_mins[0]
+	local_min_values = d[local_mins]
+	srt = np.argsort(local_min_values)
+	n = local_mins.size
+	if n < N and display_warning:
+		print("Warning utils.argmaxima: Number of maxima found is less than requested number")
+	args = np.zeros(N).astype(int)
+	for i in range(N):
+		args[i] = local_mins[srt[i]]
+	return args
+# end argminima
