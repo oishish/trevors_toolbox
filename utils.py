@@ -163,7 +163,7 @@ def argminima(d, N, order=5, display_warning=True):
 	srt = np.argsort(local_min_values)
 	n = local_mins.size
 	if n < N and display_warning:
-		print("Warning utils.argmaxima: Number of maxima found is less than requested number")
+		print("Warning utils.argminima: Number of minima found is less than requested number")
 	args = np.zeros(N).astype(int)
 	for i in range(N):
 		args[i] = local_mins[srt[i]]

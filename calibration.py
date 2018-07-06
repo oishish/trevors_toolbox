@@ -3,7 +3,7 @@ calibration.py
 
 A module for calibration functions
 
-Last updated April 2016
+Last updated December 2017
 
 by Trevor Arp
 '''

@@ -39,9 +39,9 @@ A one dimensioal Gaussian function given by
 
 f(x,y) = A*Exp[ -(x-x0)^2/(2*sigma^2)]
 '''
-def guass(x, A, x0, sigma):
+def gauss(x, A, x0, sigma):
     return A*np.exp(-(x-x0)**2/(2*sigma**2))
-# end guass2D
+# end gauss2D
 
 '''
 A two dimensional Gaussian function given by
@@ -50,9 +50,9 @@ f(x,y) = A* Exp[ -(x-x0)^2/(2*sigmax^2) - (y-y0)^2/(2*sigmay^2) ]
 
 where X is the corrdinate containing both x and y where x = X[0], y = X[1]
 '''
-def guass2D(X, A, x0, sigmax, y0, sigmay):
+def gauss2D(X, A, x0, sigmax, y0, sigmay):
     return A*np.exp(-(X[0]-x0)**2/(2*sigmax**2) - (X[1]-y0)**2/(2*sigmay**2))
-# end guass2D
+# end gauss2D
 
 '''
 A symmetric bi-exponential function with a fast and slow component
@@ -311,10 +311,10 @@ leave as -1 to start with the first element in $x and $y
 $xstop is the last data point to include in the fit,
 leave as -1 to start with the last element in $x and $y
 '''
-def guass_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
+def gauss_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
     l = len(y)
     if len(x) != l :
-        print("Error fitting.guass_fit: X and Y data must have the same length")
+        print("Error fitting.gauss_fit: X and Y data must have the same length")
         return
     if xstart == -1:
         xstart = 0
@@ -328,7 +328,7 @@ def guass_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=Non
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            p, plconv = fit(guass, x[xstart:xstop], y[xstart:xstop], p0=p0)
+            p, plconv = fit(gauss, x[xstart:xstop], y[xstart:xstop], p0=p0)
             perr = np.sqrt(np.diag(plconv))
     except Exception as e:
         if p_default is None:
@@ -344,7 +344,7 @@ def guass_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=Non
                 perr = perr_default
     return p, perr
     #return p0
-# end guass_fit
+# end gauss_fit
 
 
 '''
@@ -472,9 +472,9 @@ def compute_shift(d1, d2, frac=5.0, debugAC=False):
     l = int(rows/frac)
     Z = ac[N-l:N+l, M-l:M+l]
     try:
-        p, pcorr = fit_2D(guass2D, x[M-l:M+l], y[N-l:N+l], Z, (np.max(ac), mx[1], 1.0, mx[0], 1.0))
+        p, pcorr = fit_2D(gauss2D, x[M-l:M+l], y[N-l:N+l], Z, (np.max(ac), mx[1], 1.0, mx[0], 1.0))
     except Exception as e:
-        print("Error fitting.exact_arg_max: Could not fit autocorrlation to a guassian")
+        print("Error fitting.exact_arg_max: Could not fit autocorrlation to a gaussian")
         print(str(e))
         raise
     sft = (-p[3]+rows-1, -p[1]+cols-1)

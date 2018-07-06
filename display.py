@@ -250,7 +250,7 @@ def get_figure(fignum, rows=1, cols=1,
 		hspace = 2*margin # the amount of height reserved for white space between subplots
 		)
 	return axes, fig
-# end get_figure()
+# end get_figure
 
 """
 Fixes the bug where the positive and negative tick labels have an offset
