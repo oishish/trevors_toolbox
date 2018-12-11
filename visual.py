@@ -35,21 +35,22 @@ $title is the title of the graph, will be shown after $trange values if they exi
 CubeFigure.ax gives the axes for manipulation
 '''
 class CubeFigure(object):
-	def __init__(self, d, vrange=None, trange=None, title=''):
+	def __init__(self, d, vrange=None, trange=None, title='', ndigits=2, cmap='viridis'):
 		self.d = d
 
 		rows, cols, N = self.d.shape
 		self.N = N
+		self.ndigits = ndigits
 
 		self.fig = plt.figure()
 		self.ax = self.fig.gca()
 
 		self.ix = 1
 		if vrange is not None:
-			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap='viridis', vmin=vrange[0], vmax=vrange[1])
+			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=cmap, vmin=vrange[0], vmax=vrange[1])
 			self.autoZ = False
 		else:
-			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap='viridis')
+			self.img = self.ax.imshow(self.d[:,:,self.ix-1], cmap=cmap)
 			self.autoZ = True
 		self.cbar = self.fig.colorbar(self.img)
 
@@ -63,7 +64,7 @@ class CubeFigure(object):
 		self.title = title
 		self.trange = trange
 		if self.trange is not None:
-			self.ax.set_title(str(round(self.trange[self.ix-1])) + ' ' + self.title)
+			self.ax.set_title(str(round(self.trange[self.ix-1], self.ndigits)) + ' ' + self.title)
 		else:
 			self.ax.set_title(self.title)
 
@@ -91,7 +92,7 @@ class CubeFigure(object):
 			self.img.autoscale()
 		self.slider.valtext.set_text('{}'.format(int(self.ix))+'/'+str(self.N))
 		if self.trange is not None:
-			self.ax.set_title(str(round(self.trange[self.ix-1])) + ' ' + self.title)
+			self.ax.set_title(str(round(self.trange[self.ix-1], self.ndigits)) + ' ' + self.title)
 		self.update()
 	# end update_val
 
@@ -104,31 +105,44 @@ class CubeFigure(object):
 A Class for dispalying the fit to a data cube and showing line cuts for a given point
 '''
 class Cube_Point_Display():
-	def __init__(self, rn, d, power, fmap, fit, fitfunc,
-		xlabel='', ylabel='', zlabel='', vlabel='', title='', figtitle='', nargs=3
+	'''
+	Constructor
+	$rn standard run number
+	$d the data cube to plot
+	$zdata the data in the z direction
+	$fmap the map of the fit parameter to display
+	$fit is the cube of the fit with fit parameters as a function of (x,y)
+	$fitfunc is the function to fit to
+	'''
+	def __init__(self, rn, d, zdata, fmap, fit, fitfunc,
+		xlabel='', ylabel='', zlabel='', vlabel='', title='', figtitle='', nargs=None
 		):
 		self.rn = rn
 		self.d = d
-		self.p = power
+		self.p = zdata
 		self.fmap = fmap
 		self.fit = fit
 		self.f = fitfunc
 
 		self.rows, self.cols, self.N = d.shape
 
-		self.x = self.cols/2
-		self.y = self.rows/2
+		self.x = self.cols//2
+		self.y = self.rows//2
 		x = self.x
 		y = self.y
 
 		ri, cj, M = np.shape(self.fit)
-		self.nargs = nargs
+
+		if nargs is None:
+			self.nargs = M//2
+		else:
+			self.nargs = nargs
 
 		self.fig = plt.figure(rn+'_'+figtitle, figsize=(14,6))
 
 		# Set up the image of the fit parameter
 		self.axf = plt.subplot(1,2,1)
-		self.img = self.axf.imshow(self.fmap, cmap=get_viridis())
+		self.img = self.axf.imshow(self.fmap, cmap='viridis')
 		self.axf.set_xlim(0, self.cols)
 		self.axf.set_ylim(self.rows,0)
 		self.cbar = self.fig.colorbar(self.img)
@@ -155,11 +169,13 @@ class Cube_Point_Display():
 		self.axc.set_ylabel(vlabel)
 		self.axc.set_title(self.get_title())
 		format_plot_axes(self.axc)
-		self.fig.tight_layout()
-		self.fig.show()
+		# self.fig.tight_layout()
 
 		# Set up the events
-		self.fig.canvas.mpl_connect('button_press_event', self.onClick)
+		fnc = lambda x : self.onClick(x)
+		self.fig.canvas.mpl_connect('button_press_event', fnc)
+
+		self.fig.show()
 	# end init
 
 	'''
@@ -209,13 +225,9 @@ class Cube_Point_Display():
 Derivative of Cube_Point_Display for photocurrent power cubes
 '''
 class Power_PCI_Cube_Point_Display(Cube_Point_Display):
-	def __init__(self, run, savefile=None):
-		rn = run.log['Run Number']
-		if savefile is None:
-			savefile=find_savefile(rn)
-		power, drR, d, fit_drR, fit_pci, r = process.Space_Power_Cube(run, savefile=savefile)
-		gamma = postprocess.filter_power_cube(d, power, fit_pci, fill=0.0)
-		Cube_Point_Display.__init__(self, rn, d, power, gamma, fit_pci, fitting_power_law,
+	def __init__(self, rn, d, power, gamma, fit_pci, vrng=None):
+		pl = lambda x, A, g, I0 : fitting_power_law(x-np.min(x), A, g, I0)
+		Cube_Point_Display.__init__(self, rn, d, power, gamma, fit_pci, pl,
 			xlabel='Microns',
 			ylabel='Microns',
 			zlabel='Power (mW)',
@@ -223,33 +235,11 @@ class Power_PCI_Cube_Point_Display(Cube_Point_Display):
 			title=rn+' Photocurrent '+r'$\gamma$',
 			figtitle='pci'
 			)
-		self.img.set_clim(vmin=1.25, vmax=5.0)
+		if vrng is not None:
+			self.img.set_clim(vmin=vrng[0], vmax=vrng[1])
 		self.axf.set_xlabel('')
 		self.axf.set_ylabel('')
 		self.fig.canvas.draw()
-	# end init
-
-	def get_title(self):
-		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,4],2))
-# end Power_PCI_Cube_Point_Display
-
-'''
-Derivative of Cube_Point_Display for reflection power cubes
-'''
-class Power_RFI_Cube_Point_Display(Cube_Point_Display):
-	def __init__(self, run, savefile=None):
-		rn = run.log['Run Number']
-		if savefile is None:
-			savefile=find_savefile(rn)
-		power, drR, d, fit_drR, fit_pci, r = process.Space_Power_Cube(run, savefile=savefile)
-		Cube_Point_Display.__init__(self, rn, drR, power, fit_drR[:,:,1], fit_drR, fitting_power_law,
-			xlabel='Microns',
-			ylabel='Microns',
-			zlabel='Power (mW)',
-			vlabel=r'$\Delta R/R$',
-			title=rn+' Reflection '+r'$\gamma$',
-			figtitle='rfi'
-			)
 	# end init
 
 	def get_title(self):

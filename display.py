@@ -82,19 +82,26 @@ class figure_inches():
 
     Left and right y-axes can be colored differently
     '''
-    def make_dualy_axes(self, spec, color_left='k', color_right='k', zorder=1):
+    def make_dualy_axes(self, spec, color_left='k', color_right='k', zorder=1, lefthigher=True):
         plt.figure(self.name)
         ax0 = plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches])
         ax0.axis('off')
 
-        axl = plt.axes([spec[0]+1, spec[0]+1, spec[0]+1, spec[0]+1], zorder=zorder+1)
+        if lefthigher:
+            zorderl = zorder + 1
+            zorderr = zorder
+        else:
+            zorderl = zorder
+            zorderr = zorder + 1
+
+        axl = plt.axes([spec[0]+1, spec[1]+1, spec[2]+1, spec[3]+1], zorder=zorderl)
         axl.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
         axl.patch.set_alpha(0)
         axl.tick_params('y', colors=color_left)
         axl.spines['left'].set_color(color_left)
         axl.spines['right'].set_color(color_right)
 
-        axr = plt.axes([spec[0]+2, spec[0]+2, spec[0]+2, spec[0]+2], zorder=zorder)
+        axr = plt.axes([spec[0]+2, spec[1]+2, spec[2]+2, spec[3]+2], zorder=zorderr)
         axr.set_axes_locator(InsetPosition(ax0, [0.0, 0.0, 1.0, 1.0]))
         axr.patch.set_alpha(0)
         axr.xaxis.set_visible(False)
@@ -185,71 +192,33 @@ class figure_inches():
 # end figure_inches
 
 """
-Initilizes a figure with a specified size based on the number of rows and columns
-
-One of the plots can be 3D, pass the coordinates to ax3D as a tuple
+Initilizes a figure with a specified size based on the number of rows and columns, in standard
+format. Re-implemented to use display.figure_inches, and my usual notation
 """
-def get_figure(fignum, rows=1, cols=1,
-	fntsize=18,
-	tickfntsize=16,
-    basewidth=6.5,
-    baseheight=5.0,
-    margin=0.09,
-    marginwidth=2.0,
-    marginheight=1.0,
-	fancyfonts=True,
-	ax3D=None ):
-	if fancyfonts:
-		fancy_fonts()
-		matplotlib.rcParams.update({'font.size': fntsize})
-		matplotlib.rcParams.update({'axes.labelpad': 0})
-	axes = []
-	fig = plt.figure(fignum, figsize=(cols*basewidth+marginwidth, rows*baseheight+marginheight), facecolor='w')
-	axspec = (rows, cols)
-	if ax3D is not None:
-		i3d = ax3D[0]
-		j3d = ax3D[1]
-	else:
-		i3d = -1
-		j3d = -1
-	for i in range(rows):
-		for j in range(cols):
-			if i == i3d and j == j3d:
-				ax = plt.subplot2grid(axspec,(i,j), projection='3d')
-			else:
-				ax = plt.subplot2grid(axspec,(i,j))
-			format_plot_axes(ax, fntsize=fntsize, tickfntsize=tickfntsize)
-			axes.append(ax)
-	if (rows==1 and cols==1):
-		margin = 0.07
-		plt.subplots_adjust(
-		left  = 1.43*margin, # the left side of the subplots of the figure
-		right = 1.0-0.8*margin, # the right side of the subplots of the figure
-		bottom = 1.5*margin, # the bottom of the subplots of the figure
-		top = 1.0-1.5*margin, # the top of the subplots of the figure
-		wspace = 2.7*margin, # the amount of width reserved for blank space between subplots
-		hspace = 2.7*margin # the amount of height reserved for white space between subplots
-		)
-	elif (rows == 2 and cols==2):
-		margin = 0.07
-		plt.subplots_adjust(
-		left  = margin, # the left side of the subplots of the figure
-		right = 1.0-margin, # the right side of the subplots of the figure
-		bottom = margin, # the bottom of the subplots of the figure
-		top = 1.0-margin, # the top of the subplots of the figure
-		wspace = 2.7*margin, # the amount of width reserved for blank space between subplots
-		hspace = 2.7*margin # the amount of height reserved for white space between subplots
-		)
-	else:
-		plt.subplots_adjust(
-		left  = margin, # the left side of the subplots of the figure
-		right = 1.0-0.75*margin, # the right side of the subplots of the figure
-		bottom = 1.25*margin, # the bottom of the subplots of the figure
-		top = 1.0-1.25*margin, # the top of the subplots of the figure
-		wspace = 2*margin, # the amount of width reserved for blank space between subplots
-		hspace = 2*margin # the amount of height reserved for white space between subplots
-		)
-	return axes, fig
+def get_figure(fignum, rows=1, cols=1, width=4.75, height=3.5, xmargin=1.0, ymargin=0.7,
+        xint=1.0, yint=0.8, fntsize=14, paper_format=False):
+
+    if paper_format:
+        paper_figure_format(fntsize=fntsize)
+    else:
+        figure_format(fntsize=fntsize)
+
+    xinches = 1.5*xmargin + cols*width + (cols-1)*xint
+    yinches = 1.5*ymargin + rows*height + (rows-1)*yint
+
+    fi = figure_inches(fignum, xinches, yinches)
+    fig = fi.get_fig()
+
+    axes = []
+    ystart = ymargin
+    for i in range(rows):
+        xstart = xmargin
+        for j in range(cols):
+            ax = fi.make_axes([xstart, ystart, width, height])
+            axes.append(ax)
+            xstart = xstart + width + xint
+        ystart = ystart + height + yint
+    return axes, fig
 # end get_figure
 
 """
@@ -376,14 +345,7 @@ def scale_bar_plot(ax, img, log, length=2, units=r'$\mu m$', color='w', fontsize
 Defines a standard format for "notebook" figures and basic visualizations
 '''
 def figure_format(fntsize=14, lw=1.0, labelpad=5):
-	matplotlib.rc('font', **{'size':fntsize}) # Temporary Workaround
-	# matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
-	# matplotlib.rc('text', usetex=True)
-	# matplotlib.rcParams['text.latex.preamble'] = [
-	#        r'\usepackage{helvet}',    # set the normal font here
-	#        r'\usepackage{sansmathfonts}',  # load up the sansmath so that math -> helvet
-	#        r'\usepackage{amsmath}'
-	# ]
+	matplotlib.rcParams.update({'font.size':fntsize})
 	matplotlib.rcParams.update({'axes.labelpad': labelpad})
 	matplotlib.rcParams.update({'xtick.direction':'out'})
 	matplotlib.rcParams.update({'ytick.direction':'out'})
@@ -395,9 +357,31 @@ def figure_format(fntsize=14, lw=1.0, labelpad=5):
 
 '''
 Defines a standard format for paper figures and other production quality visualizations,
-uses helvetical font and tex rendering
+can use any font that is in Lib/site-packages/matplotlib/mpl-data/fonts/tff,
+if font=None with default to Arial
 '''
-def paper_figure_format(fntsize=15):
+def paper_figure_format(fntsize=12, font=None):
+    matplotlib.rcParams.update({'font.family':'sans-serif'})
+    if font is not None:
+        matplotlib.rcParams.update({'font.sans-serif':font})
+    else:
+        matplotlib.rcParams.update({'font.sans-serif':'Arial'})
+    matplotlib.rcParams.update({'font.size':fntsize})
+    matplotlib.rcParams.update({'axes.labelpad': 0})
+    matplotlib.rcParams.update({'xtick.direction':'out'})
+    matplotlib.rcParams.update({'ytick.direction':'out'})
+    matplotlib.rcParams.update({'xtick.major.width':1.0})
+    matplotlib.rcParams.update({'ytick.major.width':1.0})
+    matplotlib.rcParams.update({'axes.linewidth':1.0})
+    matplotlib.rcParams.update({'image.interpolation':'bilinear'})
+# end paper_figure_format
+
+'''
+Defines a standard format for paper figures and other production quality visualizations,
+uses helvetical font and tex rendering
+WARNING: With TeX rendering it may be unable to save .svg files
+'''
+def tex_figure_format(fntsize=15):
     matplotlib.rc('font', **{'family':'sans-serif', 'sans-serif':['Helvetica'], 'size':fntsize})
     matplotlib.rc('text', usetex=True)
     matplotlib.rcParams['text.latex.preamble'] = [
@@ -413,6 +397,24 @@ def paper_figure_format(fntsize=15):
     matplotlib.rcParams.update({'axes.linewidth':1.0})
     matplotlib.rcParams.update({'image.interpolation':'bilinear'})
 # end paper_figure_format
+
+'''
+Changes the color of a given matplotlbi Axes instance
+'''
+def change_axes_colors(ax, c):
+    ax.yaxis.label.set_color(c)
+    ax.xaxis.label.set_color(c)
+    ax.spines['bottom'].set_edgecolor(c)
+    ax.spines['top'].set_edgecolor(c)
+    ax.spines['left'].set_edgecolor(c)
+    ax.spines['right'].set_edgecolor(c)
+    ax.spines['bottom'].set_color(c)
+    ax.spines['top'].set_color(c)
+    ax.spines['left'].set_color(c)
+    ax.spines['right'].set_color(c)
+    ax.tick_params(axis='x', colors=c)
+    ax.tick_params(axis='y', colors=c)
+# end change_axes_colors
 
 '''
 Sets the x and y ticks for a data image based on the log file
