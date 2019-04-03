@@ -3,7 +3,7 @@ utils.py
 
 A module for various general use functions
 
-Last updated April 2018
+Last updated April 2019
 
 by Trevor Arp
 '''
@@ -122,6 +122,15 @@ def date_from_rn(rn):
 	s = rn.split('_')
 	return date(int(s[0]), int(s[1]), int(s[2]))
 # end date_from_rn
+
+'''
+A simple numerical derivative using numpy.gradient, computes using 2nd order central differences
+
+- x and y are the independent and dependent variables
+'''
+def dydx(x, y):
+	return np.gradient(y)/np.gradient(x)
+# end dydx
 
 '''
 Get the arguments of the maximum of a 2D array

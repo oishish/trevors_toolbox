@@ -360,7 +360,7 @@ Defines a standard format for paper figures and other production quality visuali
 can use any font that is in Lib/site-packages/matplotlib/mpl-data/fonts/tff,
 if font=None with default to Arial
 '''
-def paper_figure_format(fntsize=12, font=None):
+def paper_figure_format(fntsize=12, font=None, bilinear=True):
     matplotlib.rcParams.update({'font.family':'sans-serif'})
     if font is not None:
         matplotlib.rcParams.update({'font.sans-serif':font})
@@ -373,7 +373,8 @@ def paper_figure_format(fntsize=12, font=None):
     matplotlib.rcParams.update({'xtick.major.width':1.0})
     matplotlib.rcParams.update({'ytick.major.width':1.0})
     matplotlib.rcParams.update({'axes.linewidth':1.0})
-    matplotlib.rcParams.update({'image.interpolation':'bilinear'})
+    if bilinear:
+        matplotlib.rcParams.update({'image.interpolation':'bilinear'})
 # end paper_figure_format
 
 '''

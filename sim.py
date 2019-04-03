@@ -44,8 +44,8 @@ Rinf = 10973731.568508 # 1/m (Rydberg Constant)
 amu = 1.660539040e-27 # kg (atomic mass unit)
 
 # Graphene Constansts
-G_vf = 1.0e6 # m/s
-G_a = 0.142 # nm (Graphene lattice constant)
+G_vf = 1.0e6 # m/s or  1.0e6 m/s
+G_a = 0.142e-9 # m (Graphene lattice constant)
 G_Ac = 3*np.sqrt(3)*(G_a**2)/2 # nm^2 (Unit cell area)
 
 # Physical Constants other units
@@ -64,7 +64,7 @@ def DOS_Graphene(E, E0=0.0):
 The Fermi-dirac distributions as a function of energy and temperature
 '''
 def f_fd(E, T, E0=0.0):
-    return 1/(np.exp(np.abs(E-E0)/(kb_eV*T)) + 1)
+    return 1/(np.exp((E-E0)/(kb_eV*T)) + 1)
 #
 
 '''

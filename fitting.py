@@ -13,6 +13,7 @@ import scipy as sp
 import warnings
 
 from scipy.optimize import curve_fit as fit
+from scipy.optimize import leastsq
 from scipy.signal import butter, filtfilt
 from scipy.fftpack import fft, ifft, fftfreq
 
@@ -430,6 +431,10 @@ define the ranges over which the coordinates range for data, i.e. $data = func((
 $p0 is the initial parameters
 
 returns the parameters array and covariance matrix output from scipy.optimize.curve_fit
+
+USED IN DRFIT CORRECTION BUT DEPRICIATED FOR GENERAL USE, FOR MODELING AND OTHER PURPOSES
+USE leastsq_2D_fit
+
 '''
 def fit_2D(func, x, y, data, p0):
     M = len(x)
@@ -448,6 +453,31 @@ def fit_2D(func, x, y, data, p0):
     coords[1] = y_m.flatten()
     return fit(func, coords, data.flatten(), p0=p0)
 # end fit_2D
+
+
+'''
+A general fitting routine for two-dimensional data using scipy.optimize.leastsq
+
+Parameters:
+- func, the function to minimixe, takes params func(x, y, *p) and returns a 2D array
+  in the same format as the data.
+- x,y the column and row varaibles of the data.
+- data, a 2D array as a function of x and y
+- p0 the initial guesses of the parameters
+
+Returns:
+- popt, The solution (or the result of the last iteration of an unsuccessfull call.)
+- pcov, Estimate of the covaraiance mastrix from the jacobian around the solution.
+  The diagonals estimate the variance of the parameters.
+'''
+def leastsq_2D_fit(func, x, y, data, p0):
+    def lsq_func(params):
+        r = data - func(x, y, *params)
+        return r.flatten()
+    #
+    retval = leastsq(lsq_func, p0, full_output=1)
+    return retval[0], retval[1]
+# end leastsq_2D_fit
 
 
 '''
