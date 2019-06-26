@@ -13,6 +13,7 @@ import scipy as sp
 import warnings
 
 from scipy.optimize import curve_fit as fit
+from scipy.ndimage.interpolation import shift
 from scipy.optimize import leastsq
 from scipy.signal import butter, filtfilt
 from scipy.fftpack import fft, ifft, fftfreq
@@ -513,6 +514,58 @@ def compute_shift(d1, d2, frac=5.0, debugAC=False):
     else:
         return sft
 # end compute_shift
+
+'''
+Brute Force appraoch to drift correction of reflection images, find the minimum difference between
+the (normalized) two images by brute force.
+
+Parameters:
+- d1, the prime image
+- d2, the image to correct
+- maxdrift=10, the maximum number of pixels to consider
+
+Returns the shift that maps d2 onto d1 with the minimum difference
+'''
+def brute_diff_min(d1, d2, maxdrift=10):
+    rows, cols = d1.shape
+    if d2.shape != (rows, cols):
+        raise ValueError("Images must be the same size")
+
+    # Normalize the images
+    d1 = d1 - np.min(d1)
+    d1 = d1/np.max(d1)
+    d2 = d2 - np.min(d2)
+    d2 = d2/np.max(d2)
+
+    mxdiff = 1e98
+    sft = (1,0)
+    delta = np.arange(-1.0*maxdrift, maxdrift+1, 1)
+    N = len(delta)
+    for i in range(N):
+        for j in range(N):
+            ds = shift(d2,(delta[i], delta[j]))
+
+            if delta[j] < 0:
+                x1 = 0
+                x2 = int(cols + delta[j])
+            else:
+                x1 = int(delta[j])
+                x2 = cols
+
+            if delta[i] < 0:
+                y1 = 0
+                y2 = int(rows + delta[i])
+            else:
+                y1 = int(delta[i])
+                y2 = rows
+
+            diff = np.mean(np.abs(d1[y1:y2, x1:x2]-ds[y1:y2, x1:x2]))
+            if diff < mxdiff:
+                mxdiff = diff
+                sft = (delta[i], delta[j])
+
+    return sft
+# end brute_diff_min
 
 '''
 Takes a data cube and subtracts out the background from each individual scan,

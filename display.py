@@ -204,7 +204,7 @@ def get_figure(fignum, rows=1, cols=1, width=4.75, height=3.5, xmargin=1.0, ymar
         figure_format(fntsize=fntsize)
 
     xinches = 1.5*xmargin + cols*width + (cols-1)*xint
-    yinches = 1.5*ymargin + rows*height + (rows-1)*yint
+    yinches = 2*ymargin + rows*height + (rows-1)*yint
 
     fi = figure_inches(fignum, xinches, yinches)
     fig = fi.get_fig()
@@ -360,14 +360,14 @@ Defines a standard format for paper figures and other production quality visuali
 can use any font that is in Lib/site-packages/matplotlib/mpl-data/fonts/tff,
 if font=None with default to Arial
 '''
-def paper_figure_format(fntsize=12, font=None, bilinear=True):
+def paper_figure_format(fntsize=12, font=None, bilinear=True, labelpad=0):
     matplotlib.rcParams.update({'font.family':'sans-serif'})
     if font is not None:
         matplotlib.rcParams.update({'font.sans-serif':font})
     else:
         matplotlib.rcParams.update({'font.sans-serif':'Arial'})
     matplotlib.rcParams.update({'font.size':fntsize})
-    matplotlib.rcParams.update({'axes.labelpad': 0})
+    matplotlib.rcParams.update({'axes.labelpad': labelpad})
     matplotlib.rcParams.update({'xtick.direction':'out'})
     matplotlib.rcParams.update({'ytick.direction':'out'})
     matplotlib.rcParams.update({'xtick.major.width':1.0})

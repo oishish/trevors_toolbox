@@ -279,35 +279,17 @@ def process_scan(data, display=True, stabalize=True, debug=False, preprocessPCI=
             slow = calibrate_power(rn, pwi, wavelength, display=display)
         else:
             slow = np.linspace(log['Slow Axis Start'], log['Slow Axis End'], rows)
-        pw = calibrate_power_all(rn, pwi, wavelength, display=display)
+
+        if slow_var == "Wavelength":
+            pw = np.zeros((rows, cols))
+            for i in range(rows):
+                pw[i,:] = calibrate_power_all(rn, pwi[i,:], slow[i], display=False)
+        else:
+            pw = calibrate_power_all(rn, pwi, wavelength, display=display)
+        #
         return [fast, slow], pci, rfi, pw, None
     elif dimension == 3: # Cube
-        # Identify and calibrate axes
         rows, cols, N = pci.shape
-        wavelength = round(log['Wavelength'])
-        fast_var = log['Fast Axis Variable']
-        if fast_var == "Power (%)":
-            pwr = calibrate_power_all(rn, pwi[:,:,0], wavelength, display=False)
-            fast = np.mean(pwr, axis=0)
-        else:
-            fast = np.linspace(log['Fast Axis Start'], log['Fast Axis End'], cols)
-
-        slow_var = log['Slow Axis Variable']
-        if slow_var == "Power (%)":
-            slow = calibrate_power(rn, pwi[:,:,0], wavelength, display=display)
-        else:
-            slow = np.linspace(log['Slow Axis Start'], log['Slow Axis End'], rows)
-
-        cube_var = log['Cube Axis']
-        if cube_var == "Power (%)":
-            pwr = calibrate_power_all(rn, pwi, wavelength, display=False)
-            cube = np.zeros(N)
-            for k in range(N):
-                cube[k] = np.mean(pwr[:,:,k])
-        else:
-            cube = np.linspace(log['Cube Axis Start'], log['Cube Axis End'], N)
-
-        pw = calibrate_power_all(rn, pwi, wavelength, display=display)
 
         # Correct images in needed
         if stabalize:
@@ -330,6 +312,43 @@ def process_scan(data, display=True, stabalize=True, debug=False, preprocessPCI=
                 if debug:
                     print(i, sft)
             #
+        #
+
+        # Identify and calibrate axes
+        wavelength = round(log['Wavelength'])
+        fast_var = log['Fast Axis Variable']
+        if fast_var == "Power (%)":
+            pwr = calibrate_power_all(rn, pwi[:,:,0], wavelength, display=False)
+            fast = np.mean(pwr, axis=0)
+        else:
+            fast = np.linspace(log['Fast Axis Start'], log['Fast Axis End'], cols)
+
+        slow_var = log['Slow Axis Variable']
+        if slow_var == "Power (%)":
+            slow = calibrate_power(rn, pwi[:,:,0], wavelength, display=display)
+        else:
+            slow = np.linspace(log['Slow Axis Start'], log['Slow Axis End'], rows)
+
+        cube_var = log['Cube Axis']
+        if cube_var == "Power (%)":
+            pwr = calibrate_power_all(rn, pwi, wavelength, display=False)
+            cube = np.zeros(N)
+            for k in range(N):
+                cube[k] = np.mean(pwr[:,:,k])
+        else:
+            cube = np.linspace(log['Cube Axis Start'], log['Cube Axis End'], N)
+        #
+
+        if slow_var == "Wavelength":
+            pw = np.zeros((rows, cols, N))
+            for i in range(rows):
+                pw[i,:,:] = calibrate_power_all(rn, pwi[i,:,:], slow[i], display=False)
+        elif cube_var == "Wavelength":
+            pw = np.zeros((rows, cols, N))
+            for k in range(N):
+                pw[:,:,k] = calibrate_power_all(rn, pwi[:,:,k], cube[k], display=False)
+        else:
+            pw = calibrate_power_all(rn, pwi, wavelength, display=display)
         #
 
         # Fit if appropriate
