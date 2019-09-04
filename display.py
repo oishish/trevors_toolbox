@@ -11,7 +11,6 @@ by Trevor Arp
 
 import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import matplotlib.colors as colors
 import matplotlib.cm as cm
@@ -400,7 +399,7 @@ def tex_figure_format(fntsize=15):
 # end paper_figure_format
 
 '''
-Changes the color of a given matplotlbi Axes instance
+Changes the color of a given matplotlib Axes instance
 '''
 def change_axes_colors(ax, c):
     ax.yaxis.label.set_color(c)
@@ -489,7 +488,7 @@ Returns a colormap, Normlization and ScalarMappable for given data
 if color bounds not specified the min and max of the array are used, the mappable is initilized
 to the data
 '''
-def colorscale_map(darray, cmin=None, cmax=None , mapname='viridis'):
+def colorscale_map(darray, mapname='viridis', cmin=None, cmax=None):
 	cmap = plt.get_cmap(mapname)
 	if cmin is None:
 		cmin = np.min(darray)
@@ -589,7 +588,7 @@ def generate_colormap(cpt=0.5, width=0.25):
 					  (chpt, ch_RGB[2], ch_RGB[2]),
 					  (1.0, high_RGB[2], 0.0)),
 		  }
-	return mcolors.LinearSegmentedColormap('GreenBlue', cdict)
+	return colors.LinearSegmentedColormap('GreenBlue', cdict)
 # end generate_colormap
 
 '''
@@ -598,7 +597,7 @@ Returns the viridis colormap,
 DEPRICIATED since the new colormaps were added to matplotlib, still here for backwards compatibility
 '''
 def get_viridis():
-	# return mcolors.ListedColormap(_viridis_data, name='Viridis')
+	# return colors.ListedColormap(_viridis_data, name='Viridis')
 	return plt.get_cmap('viridis')
 #
 
@@ -609,5 +608,5 @@ DEPRICIATED since the new colormaps were added to matplotlib, still here for bac
 '''
 def get_plasma():
 	return plt.get_cmap('plasma')
-	# return mcolors.ListedColormap(_plasma_data, name='Plasma')
+	# return colors.ListedColormap(_plasma_data, name='Plasma')
 #

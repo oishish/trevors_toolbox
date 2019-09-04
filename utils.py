@@ -11,6 +11,8 @@ by Trevor Arp
 import numpy as np
 from scipy.ndimage.interpolation import shift
 from scipy.signal import argrelextrema
+from scipy.interpolate import interp1d
+from scipy.optimize import minimize_scalar
 
 from datetime import date
 from os.path import abspath as OS_abspath
@@ -131,6 +133,31 @@ A simple numerical derivative using numpy.gradient, computes using 2nd order cen
 def dydx(x, y):
 	return np.gradient(y)/np.gradient(x)
 # end dydx
+
+'''
+Estimate the maximum coordinates of some data from an interpolation of the data. Works best on sparse
+data following a slow curve, where the maxumum is clearly between points.
+
+Parameters:
+- x,y the data to interpolate
+- kind='cubic' the kind of inteprolation to use, default is cubic
+- warn=True, if true will print a warning if the optimization fails
+
+Returns:
+- X0, Y0, the estimated maximum location and value.
+'''
+def interp_maximum(x, y, kind='cubic', warn=True):
+    ifunc = interp1d(x, -1.0*y, kind=kind)
+    ix = np.argmin(x)
+    res = minimize_scalar(ifunc, x[ix], method='bounded', bounds=(np.min(x), np.max(x)))
+    if res.success:
+        x0 = res.x
+    else:
+        x0 = x[ix]
+        if warn:
+            print('Warning interp_maximum: Optimization did not exit successfully')
+    return x0, -1.0*ifunc(x0)
+# end interp_maximum
 
 '''
 Get the arguments of the maximum of a 2D array

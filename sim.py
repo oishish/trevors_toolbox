@@ -21,8 +21,9 @@ import traceback
 Physical Constants SI Values
 '''
 # Fundamental
-e = 1.601176e-19 # C (Elementary charge)
-c = 288782458 # m/s (speed of light)
+e = 1.602176634e-19 # C (Elementary charge)
+c = 299792458 # m/s (speed of light)
+c_nm = 2.99792458e17 # m/s (speed of light)
 h = 6.626070040e-34 #J*s
 hbar = 1.05457180e-34 #J*s
 Navgadro = 6.022140857e23 # 1/mol (Avagadro's Number)
@@ -31,7 +32,7 @@ kb = 1.38064852e-23 # J K−1 (Boltzmann's constant)
 
 # Electromagnetic
 mu0 = 4*np.pi*1e-7 # N/A^2
-epsilon0 =8.854187817e-12 # N/A^2
+epsilon0 =8.854187817e-12 # F/m
 phi0 = 2.067833831e-15 # Wb (Magnetic Flux Quantum)
 G0 = 7.748091731e-5 #S (Conductance Quantum)
 J_eV = 1.6021766208e-19 # J/eV
@@ -73,6 +74,15 @@ Heaviside Theta function
 def HTheta(x):
     return 0.5*(np.sign(x) + 1)
 #
+
+'''
+A logistic function that continuously switches between two values yl and yr
+
+Smoother version of s step function.
+'''
+def logistic_shift(x, k, yl, yr):
+    return yl + yr/(1+np.exp(-k*x))
+# logistic_shift
 
 '''
 Boxcar function
