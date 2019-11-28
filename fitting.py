@@ -65,6 +65,25 @@ def biexponential(x, A, B, tauS, C, tauF, t0):
     return A + B*np.exp(-np.abs((x-t0)/tauS)) + C*np.exp(-np.abs((x-t0)/tauF))
 # end biexponential
 
+'''
+Logarithmic Power Dependence Function, analytic solution to exciton rate equations
+
+y = (1/A)*log(1+Ax) + I0
+'''
+def log_analytic(x, B, A, I0):
+    return B*np.log(1+A*x) + I0
+# end log_analytic
+
+'''
+A basic normalized lorentzian function
+               0.5*G
+y(x) = A*---------------------
+         (x-x0)^2 + (0.5*G)^2
+'''
+def lorentzian(x, A, x0, G, y0):
+    return A*0.5*G/((x-x0)**2 + (0.5*G)**2) + y0
+# end lorentzian
+
 
 '''
 Fits data $x and $y to a symmetric exponential function defined by fitting.symm_exp
@@ -298,6 +317,47 @@ def power_law_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default
 # end power_law_fit
 
 '''
+Fits data $x and $y to the logarithm-analytic function defined by fitting.log_analytic
+
+Returns the fit parameters and the errors in the fit parameters as (p, perr)
+
+Default parameters:
+
+$p0 is the starting fit parameters,
+leave as-1 to estimate starting parameters from data
+'''
+def log_analytic_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
+    l = len(y)
+    if len(x) != l :
+        print("Error fitting.symm_exponential_fit: X and Y data must have the same length")
+        return
+    if xstart == -1:
+        xstart = 0
+    if xstop == -1:
+        xstop = l
+    if p0 == -1:
+        p0=(np.mean(y), 0.1, 0.0)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p, plconv = fit(log_analytic, x[xstart:xstop], y[xstart:xstop], p0=p0, maxfev=2000)
+            perr = np.sqrt(np.abs(np.diag(plconv)))
+    except Exception as e:
+            if p_default is None:
+                p = p0
+                perr = (0,0,0)
+                print("Error fitting.log_analytic_fit: Could not fit, parameters set to default")
+                print(str(e))
+            else:
+                p = p_default
+                if perr_default is None:
+                    perr = (0,0,0)
+                else:
+                    perr = perr_default
+    return p, perr
+# end log_analytic_fit
+
+'''
 Fits data $x and $y to a symmetric exponential function defined by fitting.symm_exp
 
 Returns the fit parameters and the errors in the fit parameters as (p, perr)
@@ -336,8 +396,54 @@ def gauss_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=Non
         if p_default is None:
             p = p0
             perr = (0,0,0)
-            #print("Error fitting.symm_exponential_fit: Could not fit, parameters set to default")
-            #print(str(e))
+        else:
+            p = p_default
+            if perr_default is None:
+                perr = (0,0,0)
+            else:
+                perr = perr_default
+    return p, perr
+# end gauss_fit
+
+'''
+Fits data $x and $y to a lorentzian function defined by fitting.lorentzian
+
+Returns the fit parameters and the errors in the fit parameters as (p, perr)
+
+Default parameters:
+
+$p0 is the starting fit parameters,
+leave as-1 to estimate starting parameters from data
+
+$xstart is the first data point to include in the fit,
+leave as -1 to start with the first element in $x and $y
+
+$xstop is the last data point to include in the fit,
+leave as -1 to start with the last element in $x and $y
+'''
+def lorentzian_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=None):
+    l = len(y)
+    if len(x) != l :
+        print("Error fitting.gauss_fit: X and Y data must have the same length")
+        return
+    if xstart == -1:
+        xstart = 0
+    if xstop == -1:
+        xstop = l
+    if p0 == -1:
+        a = np.max(y) - np.mean(y)
+        x0 = np.mean(x)
+        y0 = np.mean(y)
+        p0=(a, x0, 0.5, y0)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p, plconv = fit(lorentzian, x[xstart:xstop], y[xstart:xstop], p0=p0)
+            perr = np.sqrt(np.diag(plconv))
+    except Exception as e:
+        if p_default is None:
+            p = p0
+            perr = (0,0,0)
         else:
             p = p_default
             if perr_default is None:
@@ -348,6 +454,60 @@ def gauss_fit(x, y, p0=-1, xstart=-1, xstop=-1, p_default=None, perr_default=Non
     #return p0
 # end gauss_fit
 
+'''
+A generic wrapper for curve_fit, accepts data (x,y), a set of initial parameters p0 and a function
+to fit to.
+'''
+def generic_fit(x, y, p0, fitfunc):
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            p, plconv = fit(fitfunc, x, y, p0=p0, maxfev=2000)
+            perr = np.sqrt(np.abs(np.diag(plconv)))
+    except Exception as e:
+        p = p0
+        perr = [0 for _ in range(len(p0))]
+        print("Error fitting.generic_fit: Could not fit, parameters set to default")
+        print(str(e))
+    return p, perr
+# end generic_fit
+
+'''
+A generic function of calculating the reduced chi squared value of a fit, to a functions
+
+The reduced chi squared is the sum of variaitions per degree of freedom
+         1
+chi^2 = --- sum[ (data - fit)^2 / stdev^2 ]
+        N-m
+
+Rule of thumb for goodness of fit:
+chi2 >> 1, = bad fit
+chi2 > 1, fit not fully capturing data
+chi2 = 1, data and fit match within error varaince
+chi2 < 1, overfitting
+
+Parameters:
+data - the data to calculate
+fit - the corresponding values of the fitted function
+Nparams - the number of parameters that go into the fit
+'''
+def reduced_chi2(data, fit, Nparams):
+    N = data.size
+    var = np.var(data)
+    chi2 = np.sum((data-fit)**2 / var)
+    return chi2/(N-Nparams)
+# end reduced_chi2
+
+'''
+A generic function of calculating mean absolute value of the residual
+
+Parameters:
+data - the data to calculate
+fit - the corresponding values of the fitted function
+'''
+def mean_residual(data, fit):
+    return np.mean(np.abs(data-fit))
+# end mean_residual
 
 '''
 A generic lowpass filter

@@ -179,11 +179,20 @@ def argmaxima(d, N, order=5, display_warning=True):
 	local_max_values = d[local_maxes]
 	srt = np.argsort(local_max_values)
 	n = local_maxes.size
-	if n < N and display_warning:
-		print("Warning utils.argmaxima: Number of maxima found is less than requested number")
-	args = np.zeros(N).astype(int)
-	for i in range(N):
-		args[i] = local_maxes[srt[n-1-i]]
+	if n >= N:
+		args = np.zeros(N).astype(int)
+		for i in range(N):
+			args[i] = local_maxes[srt[n-1-i]]
+	elif n == 0:
+		if display_warning:
+			print("Warning utils.argmaxima: No relative local maxima found")
+		args = None
+	elif n < N:
+		args = np.zeros(n).astype(int)
+		for i in range(n):
+			args[i] = local_maxes[srt[n-1-i]]
+		if display_warning:
+			print("Warning utils.argmaxima: Number of maxima found is less than requested number")
 	return args
 # end argmaxima
 
@@ -198,10 +207,19 @@ def argminima(d, N, order=5, display_warning=True):
 	local_min_values = d[local_mins]
 	srt = np.argsort(local_min_values)
 	n = local_mins.size
-	if n < N and display_warning:
-		print("Warning utils.argminima: Number of minima found is less than requested number")
-	args = np.zeros(N).astype(int)
-	for i in range(N):
-		args[i] = local_mins[srt[i]]
+	if n >= N:
+		args = np.zeros(N).astype(int)
+		for i in range(N):
+			args[i] = local_mins[srt[i]]
+	elif n == 0:
+		if display_warning:
+			print("Warning utils.argminima: No relative local minima found")
+		args = None
+	elif n < N:
+		args = np.zeros(n).astype(int)
+		for i in range(n):
+			args[i] = local_mins[srt[i]]
+		if display_warning:
+			print("Warning utils.argminima: Number of minima found is less than requested number")
 	return args
 # end argminima

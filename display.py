@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+from matplotlib.colors import LinearSegmentedColormap
 
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
@@ -258,6 +259,15 @@ def zoom_in_center(ax, percentage):
 # end zoom_in_center
 
 '''
+A simple funciton to move the y-axis of a matplotlib plot to the right, becuase I keep forgetting how
+to do it.
+'''
+def yaxis_right(ax):
+    ax.yaxis.tick_right()
+    ax.yaxis.set_label_position('right')
+# end yaxis_right
+
+'''
 Centers the data in the middle of the map
 
 $d is a 2D arrawy of data to center
@@ -400,20 +410,20 @@ def tex_figure_format(fntsize=15):
 
 '''
 Changes the color of a given matplotlib Axes instance
+
+Note: for colorbars will need to put mpl.rcParams['axes.edgecolor'] = c before calling colorbarBase
+becuase the idiot who coded that bound the colorbar axes to that param value, like a moron.
 '''
 def change_axes_colors(ax, c):
     ax.yaxis.label.set_color(c)
     ax.xaxis.label.set_color(c)
-    ax.spines['bottom'].set_edgecolor(c)
-    ax.spines['top'].set_edgecolor(c)
-    ax.spines['left'].set_edgecolor(c)
-    ax.spines['right'].set_edgecolor(c)
+    ax.tick_params(axis='x', colors=c)
+    ax.tick_params(axis='y', colors=c)
     ax.spines['bottom'].set_color(c)
     ax.spines['top'].set_color(c)
     ax.spines['left'].set_color(c)
     ax.spines['right'].set_color(c)
-    ax.tick_params(axis='x', colors=c)
-    ax.tick_params(axis='y', colors=c)
+
 # end change_axes_colors
 
 '''
@@ -527,6 +537,63 @@ def discrete_colorscale(rngdict, basecolormap='viridis'):
     return locations, labels, cmap, norm
 # end discrete_colorscale
 
+'''
+This converts a given wavelength of light to an approximate RGB color value. The wavelength must be given in nanometers in the range from 380 nm through 750 nm.
+
+Based on code by Dan Bruton
+http://www.physics.sfasu.edu/astro/color/spectra.html
+'''
+def _wavelength_to_rgb(wavelength, gamma=0.8):
+    wavelength = float(wavelength)
+    if wavelength >= 380 and wavelength <= 440:
+        attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
+        R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
+        G = 0.0
+        B = (1.0 * attenuation) ** gamma
+    elif wavelength >= 440 and wavelength <= 490:
+        R = 0.0
+        G = ((wavelength - 440) / (490 - 440)) ** gamma
+        B = 1.0
+    elif wavelength >= 490 and wavelength <= 510:
+        R = 0.0
+        G = 1.0
+        B = (-(wavelength - 510) / (510 - 490)) ** gamma
+    elif wavelength >= 510 and wavelength <= 580:
+        R = ((wavelength - 510) / (580 - 510)) ** gamma
+        G = 1.0
+        B = 0.0
+    elif wavelength >= 580 and wavelength <= 645:
+        R = 1.0
+        G = (-(wavelength - 645) / (645 - 580)) ** gamma
+        B = 0.0
+    elif wavelength >= 645 and wavelength <= 750:
+        attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
+        R = (1.0 * attenuation) ** gamma
+        G = 0.0
+        B = 0.0
+    else:
+        R = 0.0
+        G = 0.0
+        B = 0.0
+    #
+    return (R, G, B)
+# end wavelength_to_rgb
+
+'''
+Creates a normalized colormap the converts a wavelength (in nm) to approximatly the color of the
+light with that wavelength
+'''
+def wavelength_colormap(N=250):
+    w = np.linspace(380, 750, N)
+    colorvals = []
+    for i in range(N):
+        colorvals.append(_wavelength_to_rgb(w[i]))
+    cmap = LinearSegmentedColormap.from_list('visiblespectrum', colorvals)
+    cnorm = colors.Normalize(vmin=380, vmax=750)
+    scalarMap = cm.ScalarMappable(norm=cnorm, cmap=cmap)
+    scalarMap.set_array(w)
+    return cmap, cnorm, scalarMap
+# end wavelength_colormap
 
 '''
 DEPRICAITED FUNCTIONS
