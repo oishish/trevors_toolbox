@@ -12,6 +12,7 @@ BACKUP BEFORE USING THIS SCRIPT!
 from sys import argv
 from os.path import exists, join
 from os import walk
+from traceback import format_exc
 
 # Old modules names, switch to 'tb.module'
 modules = ['utils', 'scans', 'display', 'visual', 'calibration', 'fitting', 'sim', 'postprocess', 'process']
@@ -98,7 +99,11 @@ if __name__ == "__main__":
         fls = search_files(argv[1])
         cnt = 0
         for f in fls:
-            r = convert_to_2020(f)
+            try:
+                r = convert_to_2020(f)
+            except:
+                print(f)
+                print(format_exc())
             if r == 0: # Successfully converted
                 cnt += 1
                 print("converted " + str(f))
