@@ -42,8 +42,6 @@ def offset_rows(data, offset):
     val = -999999
     for i in range(rows):
         data[i,:] = shift(data[i,:], offset[i], cval=val)
-    start = 0
-    stop = 0
     c = []
     for j in range(cols):
         if val in data[:,j]:
@@ -85,6 +83,8 @@ def find_run(rn, directory=None, fileend='_log.log'):
 		directory = local_values['datadir']
 	path = directory
 	s = rn.split('_')
+	if len(s) == 5: # post-2020 run number format
+		s = s[1:]
 	if OS_exists(join(path, rn + fileend)):
 		return path
 	else:
@@ -111,6 +111,8 @@ def find_savefile(rn, directory=None):
 		local_values = get_locals()
 		directory = local_values['Processed_datadir']
 	s = rn.split('_')
+	if len(s) == 5: # post-2020 run number format
+		s = s[1:]
 	path = join(directory, s[0], s[0] + '_' + s[1], s[0] + '_' + s[1] + '_' + s[2])
 	if not OS_exists(path):
 		makedirs(path)
@@ -122,6 +124,8 @@ For a standard run number returns the date at which it was taken as a datetime.d
 '''
 def date_from_rn(rn):
 	s = rn.split('_')
+	if len(s) == 5: # post-2020 run number format
+		s = s[1:]
 	return date(int(s[0]), int(s[1]), int(s[2]))
 # end date_from_rn
 
