@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
-from toolbox import format_plot_axes
+from toolbox.display import format_plot_axes
 from toolbox.fitting import power_law
 
 '''

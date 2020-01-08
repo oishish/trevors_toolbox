@@ -316,36 +316,6 @@ def show_powerlaw_points(aximg, axplt, log, x, y, power, d, color=None, showerr=
 # end show_powerlaw_points
 
 '''
-Sets a plot to use a scale bar and hidden axis,
-Always makes the scale bar in the lower right
-
-Should be called in place of set_img_ticks, for 2D scans with hidden axis
-$ax is the current axes
-$img is the image object
-$log is the log file
-
-default paramters:
-$length=2 is the length of the colorbar in data units
-$units is the text to put after the length above the scale bar
-$color is the color to use, white by default
-$fontsize
-'''
-def scale_bar_plot(ax, img, log, length=2, units=r'$\mu m$', color='w', fontsize=16):
-	lx = log['Fast Axis End'] - log['Fast Axis Start']
-	xvals = np.linspace(-lx/2, lx/2, 5)
-	ly = log['Slow Axis End'] - log['Slow Axis Start']
-	yvals = np.linspace(-ly/2, ly/2, 5)
-	set_img_ticks(ax, img, log, xvals, yvals, nticks=5)
-	x0 = lx/2 - lx/15 - length
-	y0 = ly/2 - ly/15 - length/10.0
-	fnt = {'family':'STIXGeneral',
-			'size':fontsize}
-	ax.add_patch(mpatches.Rectangle((x0,y0), length, length/10.0, facecolor=color, edgecolor=color))
-	ax.text(x0+length/2, y0-ly/30, str(length)+' '+units, color=color, fontsize=fontsize, horizontalalignment='center', fontdict=fnt)
-	ax.axis('off')
-# end scale_bar_plot
-
-'''
 Defines a standard format for "notebook" figures and basic visualizations
 '''
 def figure_format(fntsize=14, lw=1.0, labelpad=5):
@@ -418,58 +388,7 @@ def change_axes_colors(ax, c):
     ax.spines['top'].set_color(c)
     ax.spines['left'].set_color(c)
     ax.spines['right'].set_color(c)
-
 # end change_axes_colors
-
-'''
-Sets the x and y ticks for a data image based on the log file
-$ax is the current axes
-$img is the image object
-$log is the log file
-
-$xparam and $yparam are the paramters for the x and y axes if they are strings set the from the
-log file, if they are a numpy array they are set from that array
-
-$nticks is the number of ticks to use
-$sigfigs is the number of significant figures to round to
-
-$aspect if true will fix the apsect ratio to the given value, usefull if the axes have different units
-'''
-def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None):
-	if isinstance(xparam, str):
-		xt = np.linspace(0, int(log['nx'])-1, nticks)
-		xrng = range_from_log(xparam, log, log['nx'])
-	elif isinstance(xparam, np.ndarray):
-		xt = np.linspace(0, len(xparam)-1, nticks)
-		xrng = xparam
-	else:
-		print('Error set_img_ticks: X Parameter must be a string or an array, received: ' + str(xparam))
-		return
-	if isinstance(yparam, str):
-		yt = np.linspace(0, int(log['ny'])-1, nticks)
-		yrng = range_from_log(yparam, log, log['ny'])
-	elif isinstance(yparam, np.ndarray):
-		yt = np.linspace(0, len(yparam)-1, nticks)
-		yrng = yparam
-	else:
-		print('Error set_img_ticks: Y Parameter must be a string or an array, received: ' + str(yparam))
-		return
-	xl = xrng[xt.astype(int)]
-	yl = yrng[yt.astype(int)]
-	#print yl
-	for i in range(len(xl)):
-	    xl[i] = round(xl[i], sigfigs)
-	for i in range(len(yl)):
-	    yl[i] = round(yl[i], sigfigs)
-	extent = (xl[0], xl[len(xt)-1], yl[len(yt)-1], yl[0])
-	img.set_extent(extent)
-	if aspect is not None:
-		ax.set_aspect(float(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect))
-	ax.set_xticks(xl)
-	ax.set_yticks(yl)
-	ax.set_xlim(xl[0], xl[len(xt)-1])
-	ax.set_ylim(yl[len(yt)-1], yl[0])
-# end set_img_ticks
 
 '''
 Takes a color map and returns a new colormap that only uses the part of it between minval and maxval
@@ -595,10 +514,10 @@ DEPRICAITED FUNCTIONS
 '''
 
 '''
+DEPRICIATED in favor of figure_format()
+
 Formats the plot axes in a standard format
 $ax is the axes object for the plot, such as plt.gca()
-
-DEPRICIATED in favor of figure_format()
 '''
 def format_plot_axes(ax, fntsize=16, tickfntsize=14):
 	for i in ax.spines.values():
@@ -606,16 +525,6 @@ def format_plot_axes(ax, fntsize=16, tickfntsize=14):
 	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')
 	matplotlib.rcParams.update({'font.size': fntsize})
 # end format_plot_axes
-
-'''
-Set's the default font to the STIX font family
-
-DEPRICIATED in favor of figure_format()
-'''
-def fancy_fonts():
-	matplotlib.rcParams['mathtext.fontset'] = 'stix'
-	matplotlib.rcParams['font.family'] = 'STIXGeneral'
-#
 
 '''
 DEPRICIATED in favor of viridis
@@ -654,9 +563,19 @@ def generate_colormap(cpt=0.5, width=0.25):
 # end generate_colormap
 
 '''
-Returns the viridis colormap,
+DEPRICIATED in favor of figure_format()
 
+Set's the default font to the STIX font family
+'''
+def fancy_fonts():
+	matplotlib.rcParams['mathtext.fontset'] = 'stix'
+	matplotlib.rcParams['font.family'] = 'STIXGeneral'
+#
+
+'''
 DEPRICIATED since the new colormaps were added to matplotlib, still here for backwards compatibility
+
+Returns the viridis colormap,
 '''
 def get_viridis():
 	# return colors.ListedColormap(_viridis_data, name='Viridis')
@@ -672,3 +591,87 @@ def get_plasma():
 	return plt.get_cmap('plasma')
 	# return colors.ListedColormap(_plasma_data, name='Plasma')
 #
+
+'''
+DEPRICIATED in favor of setting image extent directly
+
+Sets the x and y ticks for a data image based on the log file
+$ax is the current axes
+$img is the image object
+$log is the log file
+
+$xparam and $yparam are the paramters for the x and y axes if they are strings set the from the
+log file, if they are a numpy array they are set from that array
+
+$nticks is the number of ticks to use
+$sigfigs is the number of significant figures to round to
+
+$aspect if true will fix the apsect ratio to the given value, usefull if the axes have different units
+'''
+def set_img_ticks(ax, img, log, xparam, yparam, nticks=5, sigfigs=2, aspect=None):
+	if isinstance(xparam, str):
+		xt = np.linspace(0, int(log['nx'])-1, nticks)
+		xrng = range_from_log(xparam, log, log['nx'])
+	elif isinstance(xparam, np.ndarray):
+		xt = np.linspace(0, len(xparam)-1, nticks)
+		xrng = xparam
+	else:
+		print('Error set_img_ticks: X Parameter must be a string or an array, received: ' + str(xparam))
+		return
+	if isinstance(yparam, str):
+		yt = np.linspace(0, int(log['ny'])-1, nticks)
+		yrng = range_from_log(yparam, log, log['ny'])
+	elif isinstance(yparam, np.ndarray):
+		yt = np.linspace(0, len(yparam)-1, nticks)
+		yrng = yparam
+	else:
+		print('Error set_img_ticks: Y Parameter must be a string or an array, received: ' + str(yparam))
+		return
+	xl = xrng[xt.astype(int)]
+	yl = yrng[yt.astype(int)]
+	#print yl
+	for i in range(len(xl)):
+	    xl[i] = round(xl[i], sigfigs)
+	for i in range(len(yl)):
+	    yl[i] = round(yl[i], sigfigs)
+	extent = (xl[0], xl[len(xt)-1], yl[len(yt)-1], yl[0])
+	img.set_extent(extent)
+	if aspect is not None:
+		ax.set_aspect(float(abs((extent[1]-extent[0])/(extent[3]-extent[2]))/aspect))
+	ax.set_xticks(xl)
+	ax.set_yticks(yl)
+	ax.set_xlim(xl[0], xl[len(xt)-1])
+	ax.set_ylim(yl[len(yt)-1], yl[0])
+# end set_img_ticks
+
+'''
+DEPRICIATED in favor of setting the extent and entering scale bars with real units
+
+Sets a plot to use a scale bar and hidden axis,
+Always makes the scale bar in the lower right
+
+Should be called in place of set_img_ticks, for 2D scans with hidden axis
+$ax is the current axes
+$img is the image object
+$log is the log file
+
+default paramters:
+$length=2 is the length of the colorbar in data units
+$units is the text to put after the length above the scale bar
+$color is the color to use, white by default
+$fontsize
+'''
+def scale_bar_plot(ax, img, log, length=2, units=r'$\mu m$', color='w', fontsize=16):
+	lx = log['Fast Axis End'] - log['Fast Axis Start']
+	xvals = np.linspace(-lx/2, lx/2, 5)
+	ly = log['Slow Axis End'] - log['Slow Axis Start']
+	yvals = np.linspace(-ly/2, ly/2, 5)
+	set_img_ticks(ax, img, log, xvals, yvals, nticks=5)
+	x0 = lx/2 - lx/15 - length
+	y0 = ly/2 - ly/15 - length/10.0
+	fnt = {'family':'STIXGeneral',
+			'size':fontsize}
+	ax.add_patch(mpatches.Rectangle((x0,y0), length, length/10.0, facecolor=color, edgecolor=color))
+	ax.text(x0+length/2, y0-ly/30, str(length)+' '+units, color=color, fontsize=fontsize, horizontalalignment='center', fontdict=fnt)
+	ax.axis('off')
+# end scale_bar_plot

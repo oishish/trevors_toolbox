@@ -30,11 +30,13 @@ from toolbox.scans import range_from_log
 Contains functions relating to displaying data runs, a few common functions are directly imported
 '''
 import toolbox.display as display
-from toolbox.display import set_img_ticks
-from toolbox.display import scale_bar_plot
-from toolbox.display import format_plot_axes
-from toolbox.display import get_viridis
-from toolbox.display import get_figure
+from toolbox.display import figure_format
+from toolbox.display import paper_figure_format
+#from toolbox.display import set_img_ticks
+#from toolbox.display import scale_bar_plot
+#from toolbox.display import format_plot_axes
+#from toolbox.display import get_viridis
+#from toolbox.display import get_figure
 
 '''
 Contains functions relating to specific visualizations
