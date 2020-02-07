@@ -4,7 +4,7 @@ display.py
 A module for general functions related to displaying information, for functions and classes related
 to displaying specific kinds of information see visual.py
 
-Last updated March 2017
+Last updated January 2020
 
 by Trevor Arp
 '''
@@ -376,8 +376,9 @@ def tex_figure_format(fntsize=15):
 '''
 Changes the color of a given matplotlib Axes instance
 
-Note: for colorbars will need to put mpl.rcParams['axes.edgecolor'] = c before calling colorbarBase
-becuase the idiot who coded that bound the colorbar axes to that param value, like a moron.
+Note: for colorbars will need to use matplotlib.rcParams['axes.edgecolor'] = c before
+calling colorbarBase because the idiot who coded that bound the colorbar axes to that
+param value, like a moron.
 '''
 def change_axes_colors(ax, c):
     ax.yaxis.label.set_color(c)
@@ -423,6 +424,20 @@ def colorscale_map(darray, mapname='viridis', cmin=None, cmax=None):
 	scalarMap.set_array(darray)
 	return cmap, cNorm, scalarMap
 # end colorscale_map
+
+'''
+Instantiates and returns a colorbar object for the given axes, with a few more options than
+instantiating directly
+'''
+def make_colorbar(ax, cmap, cnorm, orientation='vertical', ticks=None, ticklabels=None, color='k', alpha=None):
+    cb = matplotlib.colorbar.ColorbarBase(ax, cmap=cmap, norm=cnorm, orientation=orientation, ticks=ticks, alpha=None)
+    if ticklabels is not None:
+        cb.set_ticklabels(ticklabels)
+    if color is not 'k':
+        matplotlib.rcParams['axes.edgecolor'] = color
+        change_axes_colors(ax, color)
+    return cb
+# end make_colorbar
 
 '''
 Returns a discrete colorscale to plot the data on

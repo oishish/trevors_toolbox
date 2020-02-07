@@ -609,7 +609,7 @@ def compute_shift(d1, d2, frac=5.0, debugAC=False):
 # end compute_shift
 
 '''
-Brute Force appraoch to drift correction of reflection images, find the minimum difference between
+Brute Force approach to drift correction of reflection images, find the minimum difference between
 the (normalized) two images by brute force.
 
 Parameters:

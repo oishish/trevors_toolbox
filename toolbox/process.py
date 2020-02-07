@@ -93,8 +93,30 @@ def load_run(run_num, directory=''):
                 log[k] = str(v).strip()
     log['Fast Axis'] = (log['Fast Axis Start'], log['Fast Axis End'])
     log['Slow Axis'] = (log['Slow Axis Start'], log['Slow Axis End'])
-    log['Source/Drain'] = (log['Source/Drain Start'], log['Source/Drain End'])
-    log['Backgate'] = (log['Backgate Start'], log['Backgate End'])
+    try: # Temporary work around to deal with the fact that Vsd was redundantly assigned before
+        log['Source/Drain'] = (log['Source/Drain Start'], log['Source/Drain End'])
+    except KeyError:
+        if log['Fast Axis Variable'] == "Source/Drain (ao2)":
+            log['Source/Drain'] = (log['Fast Axis Start'], log['Fast Axis End'])
+        elif log['Slow Axis Variable'] == "Source/Drain (ao2)":
+            log['Source/Drain']  = (log['Slow Axis Start'], log['Slow Axis End'])
+        elif log['Cube Axis'] == "Source/Drain (ao2)":
+            log['Source/Drain']  = (log['Cube Axis Start'], log['Cube Axis End'])
+        else:
+            print("Warning Source/Drain not logged correctly")
+    #
+    try: # Temporary work around to deal with the fact that Vbg was redundantly assigned before
+        log['Backgate'] = (log['Backgate Start'], log['Backgate End'])
+    except KeyError:
+        if log['Fast Axis Variable'] == "Backgate (ao3)":
+            log['Backgate'] = (log['Fast Axis Start'], log['Fast Axis End'])
+        elif log['Slow Axis Variable'] == "Backgate (ao3)":
+            log['Backgate']  = (log['Slow Axis Start'], log['Slow Axis End'])
+        elif log['Cube Axis'] == "Backgate (ao3)":
+            log['Backgate']  = (log['Cube Axis Start'], log['Cube Axis End'])
+        else:
+            print("Warning Backgate not logged correctly")
+    #
 
     #load the data
     data = {}
@@ -495,7 +517,7 @@ def ProcessRun(runs, display=True, useCached=True, overwrite=False, directory=No
 #############################################
 Instruction Set Processing Scripts
 
-DEPRICIATED after 10/2017 due to introcution of hyperDAQ
+DEPRICIATED after 10/2017 due to introduction of hyperDAQ
 #############################################
 
 Generic Processing for the instruction sets, name of function is same as instruction set
