@@ -342,6 +342,7 @@ def paper_figure_format(fntsize=12, font=None, bilinear=True, labelpad=0):
         matplotlib.rcParams.update({'font.sans-serif':'Arial'})
     matplotlib.rcParams.update({'font.size':fntsize})
     matplotlib.rcParams.update({'axes.labelpad': labelpad})
+    matplotlib.rcParams.update({'axes.titlepad': labelpad})
     matplotlib.rcParams.update({'xtick.direction':'out'})
     matplotlib.rcParams.update({'ytick.direction':'out'})
     matplotlib.rcParams.update({'xtick.major.width':1.0})

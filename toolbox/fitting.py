@@ -15,7 +15,7 @@ import warnings
 from scipy.optimize import curve_fit as fit
 from scipy.ndimage.interpolation import shift
 from scipy.optimize import leastsq
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, iirnotch
 from scipy.fftpack import fft, fftfreq
 
 '''
@@ -456,6 +456,20 @@ def lowpass(data, cutoff=0.05, samprate=1.0):
     b,a = butter(2,cutoff/(samprate/2.0),btype='low',analog=0,output='ba')
     data_f = filtfilt(b,a,data)
     return data_f
+# end lowpass
+
+def notchfilter(data, frequency, Q=2.0, samplefreq=1.0):
+    '''
+    A notchpass filtter to remove a specific frequency from a signal.
+
+    Args:
+        data (numpy array) : The data to be filtered
+        frequency (float) : The frequency to filter
+        Q (float) : The Quality factor defining the frequency width of the notch filter
+        samplefreq (float) : The sampling frequency of the signal
+    '''
+    b,a = iirnotch(frequency, Q, fs=samplefreq)
+    return filtfilt(b,a,data)
 # end lowpass
 
 '''
