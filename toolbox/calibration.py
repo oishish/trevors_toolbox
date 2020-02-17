@@ -16,6 +16,34 @@ local_values = get_locals()
 InGaAs_calibration_file = local_values['InGaAs_calibration_file']
 Power_calibration_dir = local_values['Power_calibration_dir']
 
+
+def current_amplifier(data, log, scale=1.0e9):
+    '''
+    Calibration from current amplifiers, a pre-amp and an SRS lock-in amplifier (if present).
+
+    Args:
+        data (np.ndarry) : The data image (or cube) to calibrate
+        log (dict) : The log file dictionary for the run.
+        unit (:obj:'float', optional) : The scale of Amperes to calibrate to. Default is 1e9, i.e. nanoamps.
+
+    '''
+    gain = log['Pre-Amp Gain']
+    if 'Lock-In Gain' in log:
+        gain = gain*log['Lock-In Gain']/1000.0
+    return data*gain*scale
+#
+
+def power_from_meter(data, log):
+    '''
+    Calibrates the power based on the most recent (before the run number date) reading of a reference power meter.
+
+    Args:
+        data (np.ndarry) : The data image (or cube) to calibrate
+        log (dict) : The log file dictionary for the run.
+    '''
+    return calibrate_power_all(log['Run Number'], data, log['Wavelength'], display=False)
+# end power_from_meter
+
 '''
 Returns the responsivity factor the responsivity for a single given parameter, data should be
 divided by the responsivity
@@ -60,8 +88,6 @@ def calib_response(data, param, calibration=InGaAs_calibration_file):
     resp = calib_responsivity(param, calibration=calibration)
     return data/resp
 # end calib_response
-
-
 
 '''
 Calibrates a power image or cube into a one or 2D array useful for fitting

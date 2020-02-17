@@ -10,6 +10,7 @@ by Trevor Arp
 from os.path import exists, join
 import numpy as np
 from toolbox.utils import find_run
+import standards as st
 
 class Run():
     '''
@@ -23,13 +24,13 @@ class Run():
         units : A list of the units (as strings) of all the axes, in order
         data : A dictionary of the data images, where the keys are the image extensions and the values are arrays of the data
     '''
-    def __init__(self, run_num, autosave=True, overwite=False, calibrate=True, stabalize=True, preprocess=None, customdir=None):
+    def __init__(self, run_num, autosave=True, overwite=False, calibrate=None, stabalize=True, preprocess=None, customdir=None):
         '''
         Args:
             run_num (str) : The run number in standard hyperDAQ form, i.e. "SYSTEM_YEAR_MONTH_DAY_NUMBER"
             autosave (:obj:'bool', optional) : Whether or not to save a processed file after processing is complete. Defaults to True.
             overwrite (:obj:'bool', optional) : If True will overwrite a prvious processed savefile during autosave. Defaults to False.
-            calibrate (:obj:'bool', optional) : If True will calibrate according to the calibrate() function. Defaults to True.
+            calibrate (:obj:'dict', optional) : If not None will use value as the calibration specification. By default (None) uses calib_spec in standards.py.
             stabalize (:obj:'bool', optional) : If True will stabalaize the images (if possible) according to the stabalize() function. Defaults to True.
             preprocess (:obj:'dict', optional) : If not None will call the process function with the value as the argument
             customdir (str, optional) : A custom save directory, if None it will search the directory defined in the locals file
@@ -98,6 +99,17 @@ class Run():
         # Pre-process if needed
         if preprocess is not None:
             self.process(preprocess)
+        #
+
+        # Calibrate the data images as specified in calibration specification
+        if calibrate is None:
+            calib = st.standard_calibration
+        else:
+            calib = calibrate
+        for k,v in self.data.items():
+            if calib[k] is not None:
+                self.data[k] = calib[k](v, self.log)
+        #
 
         # Assemble the axes
         self.axes = []
@@ -110,24 +122,19 @@ class Run():
 
         for i in range(len(axlbls)):
             self.units.append(self.log[axlbls[i] +' Axis Units'])
-            if self.log[axlbls[i] +' Axis Sampling'] == 'linspace':
-                samplefunc = np.linspace
-            else:
-                raise ValueError("Sampling function not yet implemented")
-                '''
-                !!!!!!!!!!!!!!!!!!!!
-                # Need a way to pick out the sampling function for non-standard sampling.
-                # Maybe some kind of namespace file akin to the locals? This would also help with the
-                # other things that need defaults
-                '''
-            self.axes.append(samplefunc(self.log[axlbls[i] +' Axis Start'], self.log[axlbls[i] +' Axis End'], self.shape[i]))
+            if self.log[axlbls[i] +' Axis Variable'] in st.measured_axes: # If it is a measured axis
+                img = st.measured_axes[self.log[axlbls[i] +' Axis Variable']]
+                # AVERAGE THE IMAGE ALONG THE GIVEN AXIS, COVERING ALL CASES
+                raise("HAVEN'T IMPLEMENTED THIS YET")
+            else: # If it is a sampled axis
+                if self.log[axlbls[i] +' Axis Sampling'] in st.sampling:
+                    samplefunc = st.sampling[self.log[axlbls[i] +' Axis Sampling']]
+                else:
+                    raise KeyError("Sampling function " + sfuncval + " not in standards.py")
+                self.axes.append(samplefunc(self.log[axlbls[i] +' Axis Start'], self.log[axlbls[i] +' Axis End'], self.shape[i]))
         #
 
-        # Calibrate the values as specified in the default.
-
-        # Calibrate various axes
-
-        # Stabalize if needed
+        # Stabalize the images if needed
 
     # end __init__
 
@@ -151,14 +158,6 @@ class Run():
         '''
         return self.shape
     # end shape
-
-    def calibrate(self):
-        '''
-        Calibrates all the defined axes.
-        ##### Needs to have some standard method of calibrating, and some options
-        '''
-        pass
-    # end calibrate
 
     def stabalize(self):
         '''
