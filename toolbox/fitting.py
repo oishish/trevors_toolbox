@@ -623,6 +623,17 @@ def compute_shift(d1, d2, frac=5.0, debugAC=False):
 # end compute_shift
 
 '''
+Wrapper of compute shift that just normalizes the images it gets
+'''
+def norm_compute_shift(d1, d2, frac=5.0, debugAC=False):
+    d1 = np.abs(d1)
+    d1 = d1 - np.min(d1)
+    d2 = np.abs(d2)
+    d2 = d2 - np.min(d2)
+    return compute_shift(d1/np.max(d1), d2/np.max(d2), frac=5.0, debugAC=False)
+# end compute_shift
+
+'''
 Brute Force approach to drift correction of reflection images, find the minimum difference between
 the (normalized) two images by brute force.
 
