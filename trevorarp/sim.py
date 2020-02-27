@@ -15,55 +15,13 @@ from scipy.integrate import quad
 import datetime
 import traceback
 
-'''
-Physical Constants SI Values
-'''
-# Fundamental
-e = 1.602176634e-19 # C (Elementary charge)
-c = 299792458 # m/s (speed of light)
-c_nm = 2.99792458e17 # m/s (speed of light)
-h = 6.626070040e-34 #J*s
-hbar = 1.05457180e-34 #J*s
-Navgadro = 6.022140857e23 # 1/mol (Avagadro's Number)
-kb = 1.38064852e-23 # J K−1 (Boltzmann's constant)
-
-
-# Electromagnetic
-mu0 = 4*np.pi*1e-7 # N/A^2
-epsilon0 =8.854187817e-12 # F/m
-phi0 = 2.067833831e-15 # Wb (Magnetic Flux Quantum)
-G0 = 7.748091731e-5 #S (Conductance Quantum)
-J_eV = 1.6021766208e-19 # J/eV
-
-# Particle
-me = 9.10938356e-31 # kg (electron mass)
-mp = 1.672621898e-27 # kg (proton mass)
-alphaFS = 7.2973525664e-3 # Electromagnetic Fine Structure constant
-Rinf = 10973731.568508 # 1/m (Rydberg Constant)
-amu = 1.660539040e-27 # kg (atomic mass unit)
-
-# Graphene Constansts
-G_vf = 1.0e6 # m/s or  1.0e6 m/s
-G_a = 0.142e-9 # m (Graphene lattice constant)
-G_Ac = 3*np.sqrt(3)*(G_a**2)/2 # nm^2 (Unit cell area)
-
-# Physical Constants other units
-kb_eV = 8.6173324e-5 # eV/K
-h_eV = 4.135667662e-15 # eV s
-hbar_eV = 6.582119514e-16 # eV s
+from gaborlab.physics import G_vf, G_Ac
 
 '''
 The Density of States for Graphene
 '''
 def DOS_Graphene(E, E0=0.0):
     return (2*G_Ac/(np.pi*G_vf**2))*np.abs(E-E0)
-#
-
-'''
-The Fermi-dirac distributions as a function of energy and temperature
-'''
-def f_fd(E, T, E0=0.0):
-    return 1/(np.exp((E-E0)/(kb_eV*T)) + 1)
 #
 
 '''
