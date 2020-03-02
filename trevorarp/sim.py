@@ -25,13 +25,6 @@ def DOS_Graphene(E, E0=0.0):
 #
 
 '''
-Heaviside Theta function
-'''
-def HTheta(x):
-    return 0.5*(np.sign(x) + 1)
-#
-
-'''
 A logistic function that continuously switches between two values yl and yr
 
 Smoother version of s step function.
@@ -39,15 +32,6 @@ Smoother version of s step function.
 def logistic_shift(x, k, yl, yr):
     return yl + yr/(1+np.exp(-k*x))
 # logistic_shift
-
-'''
-Boxcar function
-
-Composed of two HTheta function that are 1.0 from start to stop and is zero everywhere else
-'''
-def Box(x, start, stop):
-    return HTheta(x-start) - HTheta(x-stop)
-#
 
 '''
 For a given profile of $gamma simulate the resulting photocurrent assuming a power law
@@ -75,7 +59,6 @@ def conv_PC_gamma(gamma, FWHM):
         out[i] = y
     return out
 # end conv_PC_gamma
-
 
 '''
 Multipurpose parallel processor
