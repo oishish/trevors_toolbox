@@ -103,12 +103,7 @@ $max_terr is the maximum acceptable error in tau, points above this are filtered
 returns filtered tau values
 
 '''
-def filter_delay_cube(t, fit,
-    fill=None,
-    min_A=0.1,
-    max_tau=100,
-    max_terr=5.0
-    ):
+def filter_delay_cube(t, fit, fill=None, min_A=0.1, max_tau=100, max_terr=5.0):
     if fill is None:
         fill = np.nan
     rows, cols, N = np.shape(fit)
@@ -141,12 +136,7 @@ fractional uncertainty they will be filtered out
 returns filtered tau values
 
 '''
-def filter_biexp_delay_cube(t, fit,
-    fill=None,
-    min_Amp=1.0,
-    max_slow = 100,
-    fracUC=2.0
-    ):
+def filter_biexp_delay_cube(t, fit, fill=None, min_Amp=1.0, max_slow=100, fracUC=2.0):
     if fill is None:
         fill = np.nan
     rows, cols, N = np.shape(fit)
