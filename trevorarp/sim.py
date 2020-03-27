@@ -60,21 +60,27 @@ def conv_PC_gamma(gamma, FWHM):
     return out
 # end conv_PC_gamma
 
-'''
-Multipurpose parallel processor
-
-Takes a function and an array of arguments, evaluates the function with the given arguments for each point,
-processing in parallel using $ncores number of parallel processes. Returns the results as a numpy ndarray
-
-$args_array is the array of arguments to the input function $func. $func can only accept one argement,
-but it can be a list or tuple
-
-Will display progress if $display is True
-
-WARNING: needs to be protected by a if __name__ == "__main__" block or else multiprocessing.pool Will
-throw a hissy fit
-'''
 def multiprocess2D(func, args_array, ncores=4, display=True):
+    '''
+    Multipurpose parallel processing
+
+    Takes a function and an array of arguments, evaluates the function with the given
+    arguments for each point, processing in parallel using ncores number of parallel
+    processes.
+
+    WARNING: needs to be protected by a if __name__ == "__main__" block or else
+    multiprocessing.pool will throw a hissy fit.
+
+    Args:
+        func : The function to evaluate, can only accept one argument but it can be a list
+            or tuple
+        args_array is the array of arguments to the input function $func.
+        ncores : The number of nodes to pass to multiprocessing.Pool
+        display : Will display progress if true.
+
+    Returns:
+        Returns the results of the calculation as a numpy ndarray.
+    '''
     pool = Pool(processes=ncores)
     rows = len(args_array)
     cols = len(args_array[0])
