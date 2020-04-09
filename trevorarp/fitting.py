@@ -136,12 +136,12 @@ def lp_cube_rows_cols(datacube, cutoff=0.05, samprate=1.0):
 '''
 Takes a 2D scan and lowpases the columns of each scan using fitting.lowpass
 '''
-def lp_scan_cols(datacube, cutoff=0.05, samprate=1.0):
-    rows, cols = datacube.shape
-    original = np.copy(datacube)
+def lp_scan_cols(data, cutoff=0.05, samprate=1.0):
+    rows, cols = data.shape
+    original = np.copy(data)
     for i in range(cols):
-        datacube[:,i] = lowpass(original[:,i], cutoff=cutoff, samprate=samprate)
-    return datacube
+        data[:,i] = lowpass(original[:,i], cutoff=cutoff, samprate=samprate)
+    return data
 # end lp_cube_cols
 
 '''
