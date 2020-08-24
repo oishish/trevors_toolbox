@@ -6,11 +6,43 @@ A module for various general use functions
 Last updated February 2020
 
 by Trevor Arp
+All Rights Reserved
 '''
 
 import numpy as np
 from scipy.ndimage.interpolation import shift
 from scipy.signal import argrelextrema
+
+def indexof(list, item):
+	'''
+	Searches a list and returns the index of item. Compares as strings. Returns -1 if it can't find it.
+
+	Args:
+		list : The list to search
+		item : The item to find
+	'''
+	for i in range(len(list)):
+		if list[i] == item :
+			return i
+	print("warning utilities.indexof: Could not locate given item: " + str(item))
+	return -1
+# end indexof
+
+# Taken from https://stackoverflow.com/questions/42656930/numpy-assignment-like-numpy-take
+def put_at(inds, axis=-1, slc=(slice(None),)):
+	'''
+	Generated indices to place data into an array in a similar manner to how numpy.take accesses
+	data, is meant to be used as a[put_at(indicies, axis)] where to access that data would be
+	numpy.take(a, indicies, axis)
+
+	Args:
+		inds : The indices of the values to access.
+		axis : The axis over which to select values.
+		slc : The slide of that axis to select.
+	'''
+	return (axis<0)*(Ellipsis,) + axis*slc + (inds,) + (-1-axis)*slc
+# end put_at
+
 
 '''
 Shift the rows of the given matrix $data horizontally by a shift given by the array $offset

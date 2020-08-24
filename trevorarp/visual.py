@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 from toolbox.display import format_plot_axes
-from toolbox.fitting import power_law
 
 '''
 A Class for displaying a data cube, where the user can switch between scans using a slider or using
@@ -215,28 +214,3 @@ class Cube_Point_Display():
 		self.fig.canvas.draw()
 	# end updateLines
 # end Cube_Linecut_Display
-
-'''
-Derivative of Cube_Point_Display for photocurrent power cubes
-'''
-class Power_PCI_Cube_Point_Display(Cube_Point_Display):
-	def __init__(self, rn, d, power, gamma, fit_pci, vrng=None):
-		pl = lambda x, A, g, I0 : power_law(x-np.min(x), A, g, I0)
-		Cube_Point_Display.__init__(self, rn, d, power, gamma, fit_pci, pl,
-			xlabel='Microns',
-			ylabel='Microns',
-			zlabel='Power (mW)',
-			vlabel='|I| (nA)',
-			title=rn+' Photocurrent '+r'$\gamma$',
-			figtitle='pci'
-			)
-		if vrng is not None:
-			self.img.set_clim(vmin=vrng[0], vmax=vrng[1])
-		self.axf.set_xlabel('')
-		self.axf.set_ylabel('')
-		self.fig.canvas.draw()
-	# end init
-
-	def get_title(self):
-		return r"$\gamma = $ "+ str(round(self.fit[self.y,self.x,1],3)) + '$\pm$' + str(round(self.fit[self.y,self.x,4],2))
-# end Power_PCI_Cube_Point_Display

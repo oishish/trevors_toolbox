@@ -15,24 +15,6 @@ from scipy.integrate import quad
 import datetime
 import traceback
 
-from gaborlab.physics import G_vf, G_Ac
-
-'''
-The Density of States for Graphene
-'''
-def DOS_Graphene(E, E0=0.0):
-    return (2*G_Ac/(np.pi*G_vf**2))*np.abs(E-E0)
-#
-
-'''
-A logistic function that continuously switches between two values yl and yr
-
-Smoother version of s step function.
-'''
-def logistic_shift(x, k, yl, yr):
-    return yl + yr/(1+np.exp(-k*x))
-# logistic_shift
-
 '''
 For a given profile of $gamma simulate the resulting photocurrent assuming a power law
 photoresponse I = A*P^gamma, and a diffraction limited guassian beam with a full with at
