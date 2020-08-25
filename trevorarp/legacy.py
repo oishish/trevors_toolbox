@@ -11,7 +11,7 @@ import standards as st
 
 import matplotlib
 
-from trevorarp.visuals import Cube_Point_Display
+from trevorarp.visual import Cube_Point_Display
 from trevorarp.math import power_law
 
 class LegacyRun(Run):
