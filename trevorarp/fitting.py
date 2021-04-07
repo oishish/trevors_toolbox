@@ -417,3 +417,26 @@ def subtract_bg_cube(datacube, nx=20):
             datacube[i,:,j] = datacube[i,:,j] - n[i]
     return datacube
 # end subtract_bg_cube
+
+def max_from_interp(x, y, kind='cubic', N=200):
+    '''
+    Find the maximum of y in the range of x while interpolating to increase resolution.
+
+    Args:
+        x : The independent variable
+        y : The dependent variable
+        warn (str, optional) : parameter passed to interp1d
+        N (int, optional) : resolution of the interpolated data
+
+    Returns:
+        xmax, ymax
+
+            The x coordinate and value of the maximum
+    '''
+    _x = np.linspace(np.min(x), np.max(x), N)
+    Ifunc = interp1d(x, y, kind=kind)
+    ixmax = np.argmax(Ifunc(_x))
+    xmax = _x[ixmax]
+    ymax = Ifunc(xmax)
+    return xmax, ymax, _x, Ifunc(_x)
+# end max_from_interp
