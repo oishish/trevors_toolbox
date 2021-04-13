@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
-from trevorarp.display import format_plot_axes
+from trevorarp.legacy import format_plot_axes
 
 '''
 A Class for displaying a data cube, where the user can switch between scans using a slider or using

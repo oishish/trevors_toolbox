@@ -205,6 +205,19 @@ def tex_figure_format(fntsize=15):
 # end paper_figure_format
 
 '''
+DEPRICATED in favor of figure_format()
+
+Formats the plot axes in a standard format
+$ax is the axes object for the plot, such as plt.gca()
+'''
+def format_plot_axes(ax, fntsize=16, tickfntsize=14):
+	for i in ax.spines.values():
+		i.set_linewidth(2)
+	ax.tick_params(width=2, labelsize=tickfntsize, direction='out')
+	matplotlib.rcParams.update({'font.size': fntsize})
+# end format_plot_axes
+
+'''
 For a power data cube, filters the points based on the fit
 
 $d is the raw data and $power is the power parameter
