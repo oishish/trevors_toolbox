@@ -22,7 +22,7 @@ import numpy as np
 from scipy.ndimage import center_of_mass
 from scipy.ndimage.interpolation import shift
 
-from toolbox.fitting import power_law, power_law_fit
+from trevorarp.fitting import power_law, power_law_fit
 
 matplotlib.rcParams["keymap.fullscreen"] = ''
 
