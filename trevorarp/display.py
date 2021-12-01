@@ -4,18 +4,21 @@ display.py
 A module for general functions related to displaying information, for functions and classes related
 to displaying specific kinds of information see visual.py
 
-Last updated August 2020
+Last updated November 2021
 
 by Trevor Arp
 All Rights Reserved
 '''
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
+
+import addcopyfighandler
+from datetime import datetime
 
 import numpy as np
 
@@ -24,8 +27,6 @@ from scipy.ndimage.interpolation import shift
 
 from trevorarp.fitting import power_law, power_law_fit
 
-matplotlib.rcParams["keymap.fullscreen"] = ''
-
 class figure_inches():
     '''
     A class to assist in the layout of figures, handling the conversion from matplotlibs
@@ -33,17 +34,78 @@ class figure_inches():
     of various kinds from specifications given in inches.
 
     Args:
-        name (str) : The name of the figure, can't have two figures with the same name in a script
-        xinches (float) : The width of the figure in inches
-        yinches (float) : The height of the figure in inches
+        name (str) : The name of the figure, can't have two figures with the same name in a script.
+            If None, will default to the current date and time.
+        xinches (float) : The width of the figure in inches. To make several default size
+            figures, pass the number of figures per row in a grid layout as a string. For example,
+            give xinches="2" to make the figure large enough for two default figures per row.
+        yinches (float) : The height of the figure in inches. To make several default size
+            figures, pass the number of rows of figures (in a grid layout) as a string. For example,
+            give yinches="2" to make the figure large enough for two rows of default figures.
+        style (str) : The style to use. Options are "notes" style (default) as defined in notes_format
+            of the "figure" format for customizing papers as defined in figure_format. Style will not be
+            set if style (i.e. rcParams) has already been modified.
+        dark (bool) : Use the dark theme
     '''
 
-    def __init__(self, name, xinches, yinches):
-        self.xinches = xinches
-        self.yinches = yinches
-        self.r = yinches/xinches
-        self.name = name
-        self.fig = plt.figure(self.name, figsize=(self.xinches, self.yinches), facecolor='w')
+    def __init__(self, name=None, xinches="1", yinches="1", default=None, style='notes', dark=False):
+        self.defaults = {
+        'xinches':5.25,
+        'yinches':5.0,
+        'xmargin':0.75,
+        'ymargin':0.65,
+        'height':3.5,
+        'width':4.0,
+        'xint':0.8,
+        'yint':0.8
+        }
+        self.default_figs_x = 0
+        if isinstance(xinches,str):
+            try:
+                self.Nx = int(xinches)
+            except:
+                raise ValueError("Invalid str to specify number of default figures.")
+            self.xinches = self.defaults['xinches'] + (self.Nx-1)*(self.defaults['width']+self.defaults['xint'])
+            self.default_xstart = self.defaults['xmargin']
+        else:
+            self.Nx = 0
+            self.xinches = xinches
+            self.default_xstart = self.defaults['xmargin']
+
+        if isinstance(yinches,str):
+            try:
+                self.Ny = int(yinches)
+            except:
+                raise ValueError("Invalid str to specify number of default figures.")
+            self.yinches = self.defaults['yinches'] + (self.Ny-1)*(self.defaults['height']+self.defaults['yint'])
+            self.default_ystart = self.defaults['ymargin'] + (self.Ny-1)*(self.defaults['height']+self.defaults['yint'])
+        else:
+            self.Ny = 0
+            self.yinches = yinches
+            self.default_ystart = self.defaults['ymargin']
+        self.r = self.yinches/self.xinches
+
+        if name is None:
+            now = datetime.now()
+            self.name = now.strftime("%Y-%m-%d-%H:%M:%S")
+        else:
+            self.name = name
+
+        if mpl.rcParamsDefault == mpl.rcParams:
+            if style == 'notes':
+                notes_format()
+            elif style == "paper" or style == "figure":
+                figure_format()
+            else:
+                print("Invalid style, using default")
+
+        if dark:
+            facecolor='k'
+            plt.style.use('dark_background')
+        else:
+            facecolor='w'
+
+        self.fig = plt.figure(self.name, figsize=(self.xinches, self.yinches), facecolor=facecolor)
     # end init
 
     def get_fig(self):
@@ -53,20 +115,32 @@ class figure_inches():
         return self.fig
     # end make_figure
 
-    def make_axes(self, spec, zorder=1):
+    def make_axes(self, spec=None, zorder=1):
         '''
         Makes and returns a matplotlib Axes object.
 
         Args:
-            spec : A list of the dimensions of the axis [left, bottom, width, height] in inches
+            spec : A list of the dimensions (in inches) of the axis can be [left, bottom, width, height]
+                to fully specify, or [left, bottom] to set the x and y coordinates and use the default size or
+                leave as None for the default size and position.
             zorder (int, optional) : The "z-axis" order of the axis, Axes with a higher zorder will appear
                 on top of axes with a lower zorder.
         '''
+        if spec is None:
+            self.default_figs_x += 1
+            spec = [self.default_xstart, self.default_ystart, self.defaults['width'], self.defaults['height']]
+            self.default_xstart = self.default_xstart + self.defaults['width'] + self.defaults['xint']
+            if self.default_figs_x >= self.Nx:
+                self.default_figs_x = 0
+                self.default_xstart = self.defaults['xint']
+                self.default_ystart = self.default_ystart - self.defaults['height'] - self.defaults['yint']
+        elif len(spec) == 2:
+            spec = [spec[0], spec[1], self.defaults['width'], self.defaults['height']]
         plt.figure(self.name)
         return plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches], zorder=zorder)
     # make_axes
 
-    def make_3daxes(self, spec, zorder=1):
+    def make_3daxes(self, spec=None, zorder=1):
         '''
         Makes and returns a matplotlib Axes object with a 3D projection
 
@@ -75,11 +149,57 @@ class figure_inches():
             zorder (int, optional) : The "z-axis" order of the axis, Axes with a higher zorder will appear
                 on top of axes with a lower zorder.
         '''
+        if spec is None:
+            self.default_figs_x += 1
+            spec = [self.default_xstart, self.default_ystart, self.defaults['width'], self.defaults['height']]
+            self.default_xstart = self.default_xstart + self.defaults['width'] + self.defaults['xint']
+            if self.default_figs_x >= self.Nx:
+                self.default_figs_x = 0
+                self.default_xstart = self.defaults['xint']
+                self.default_ystart = self.default_ystart - self.defaults['height'] - self.defaults['yint']
+        elif len(spec) == 2:
+            spec = [spec[0], spec[1], self.defaults['width'], self.defaults['height']]
         plt.figure(self.name)
         return plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches], zorder=zorder, projection='3d')
     # make_3daxes
 
-    def make_dualy_axes(self, spec, color_left='k', color_right='k', zorder=1, lefthigher=True):
+    def make_img_axes(self, spec=None, zorder=1):
+        '''
+        Makes and returns a matplotlib Axes object with a default colorbar.
+        To easily make a colorbar in the title area.
+
+        Args:
+            spec : A list of the dimensions of the axis [left, bottom, width, height] in inches
+            zorder (int, optional) : The "z-axis" order of the axis, Axes with a higher zorder will appear
+                on top of axes with a lower zorder.
+        '''
+        if spec is None:
+            self.default_figs_x += 1
+            spec = [self.default_xstart, self.default_ystart, self.defaults['height'], self.defaults['height']]
+            self.default_xstart = self.default_xstart + self.defaults['height'] + self.defaults['xint']
+            if self.default_figs_x >= self.Nx:
+                self.default_figs_x = 0
+                self.default_xstart = self.defaults['xint']
+                self.default_ystart = self.default_ystart - self.defaults['height'] - self.defaults['yint']
+        elif len(spec) == 2:
+            spec = [spec[0], spec[1], self.defaults['height'], self.defaults['height']]
+        plt.figure(self.name)
+        xpos = spec[0]/self.xinches
+        ypos = spec[1]/self.yinches
+        width = spec[2]/self.xinches
+        height = spec[3]/self.yinches
+        ax = plt.axes([xpos, ypos, width, height], zorder=zorder)
+
+        margin = 0.1/self.yinches #min([0.1*height]
+        cbwidth = 0.62*width
+        cbheight = 0.2/self.yinches
+        cb = plt.axes([xpos+width-cbwidth, ypos+height+margin, cbwidth, cbheight], zorder=zorder)
+        xaxis_top(cb)
+        cb.__display_default_flag__ = True
+        return ax, cb
+    # make_axes_and_cb
+
+    def make_dualy_axes(self, spec=None, color_left='k', color_right='k', zorder=1, lefthigher=True):
         '''
         Makes and returns two overlaid axes, with two y axes sharing the same x-axis.
 
@@ -91,6 +211,16 @@ class figure_inches():
                 on top of axes with a lower zorder.
             lefthigher (bool, optional) : If True (default) the left axis will be on top and provide the x-axis.
         '''
+        if spec is None:
+            self.default_figs_x += 1
+            spec = [self.default_xstart, self.default_ystart, self.defaults['width'], self.defaults['height']]
+            self.default_xstart = self.default_xstart + self.defaults['width'] + self.defaults['xint']
+            if self.default_figs_x >= self.Nx:
+                self.default_figs_x = 0
+                self.default_xstart = self.defaults['xint']
+                self.default_ystart = self.default_ystart - self.defaults['height'] - self.defaults['yint']
+        elif len(spec) == 2:
+            spec = [spec[0], spec[1], self.defaults['width'], self.defaults['height']]
         plt.figure(self.name)
         ax0 = plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches])
         ax0.axis('off')
@@ -120,7 +250,7 @@ class figure_inches():
         return axl, axr
     # make_dualy_axes
 
-    def make_dualx_axes(self, spec, color_bottom='k', color_top='k', zorder=1):
+    def make_dualx_axes(self, spec=None, color_bottom='k', color_top='k', zorder=1):
         '''
         Makes and returns two overlaid axes, with two y axes sharing the same x-axis. Note, the
         first axes returned (the bottom x-axis) is "on top" and provides the y-axis
@@ -132,6 +262,16 @@ class figure_inches():
             zorder (int, optional) : The "z-axis" order of the axis, Axes with a higher zorder will appear
                 on top of axes with a lower zorder.
         '''
+        if spec is None:
+            self.default_figs_x += 1
+            spec = [self.default_xstart, self.default_ystart, self.defaults['width'], self.defaults['height']]
+            self.default_xstart = self.default_xstart + self.defaults['width'] + self.defaults['xint']
+            if self.default_figs_x >= self.Nx:
+                self.default_figs_x = 0
+                self.default_xstart = self.defaults['xint']
+                self.default_ystart = self.default_ystart - self.defaults['height'] - self.defaults['yint']
+        elif len(spec) == 2:
+            spec = [spec[0], spec[1], self.defaults['width'], self.defaults['height']]
         plt.figure(self.name)
         ax0 = plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches])
         ax0.axis('off')
@@ -153,7 +293,7 @@ class figure_inches():
         return axb, axt
     # make_dualx_axes
 
-    def make_dualxy_axes(self, spec, color_bottom='k', color_top='k', color_left='k', color_right='k', zorder=1):
+    def make_dualxy_axes(self, spec=None, color_bottom='k', color_top='k', color_left='k', color_right='k', zorder=1):
         '''
         Makes and returns two overlaid axes, with two y axes sharing the same x-axis. Note: the
         first axis returned (the left y-axis) is "on top"
@@ -170,6 +310,16 @@ class figure_inches():
         Returns:
             axes : Returns the axes in the following order: left, right, bottom, top
         '''
+        if spec is None:
+            self.default_figs_x += 1
+            spec = [self.default_xstart, self.default_ystart, self.defaults['width'], self.defaults['height']]
+            self.default_xstart = self.default_xstart + self.defaults['width'] + self.defaults['xint']
+            if self.default_figs_x >= self.Nx:
+                self.default_figs_x = 0
+                self.default_xstart = self.defaults['xint']
+                self.default_ystart = self.default_ystart - self.defaults['height'] - self.defaults['yint']
+        elif len(spec) == 2:
+            spec = [spec[0], spec[1], self.defaults['width'], self.defaults['height']]
         plt.figure(self.name)
         ax0 = plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches])
         ax0.axis('off')
@@ -244,22 +394,56 @@ def figure_format(fntsize=12, font=None, bilinear=True, labelpad=0):
         bilinear (bool, optional) : If true (default) will use 'bilinear' interpolation option in imshow
         labelpad (float, optional) : The default padding between the axes and axes labels.
     '''
-    matplotlib.rcParams.update({'font.family':'sans-serif'})
+    mpl.rcParams.update({'font.family':'sans-serif'})
     if font is not None:
-        matplotlib.rcParams.update({'font.sans-serif':font})
+        mpl.rcParams.update({'font.sans-serif':font})
     else:
-        matplotlib.rcParams.update({'font.sans-serif':'Arial'})
-    matplotlib.rcParams.update({'font.size':fntsize})
-    matplotlib.rcParams.update({'axes.labelpad': labelpad})
-    matplotlib.rcParams.update({'axes.titlepad': labelpad})
-    matplotlib.rcParams.update({'xtick.direction':'out'})
-    matplotlib.rcParams.update({'ytick.direction':'out'})
-    matplotlib.rcParams.update({'xtick.major.width':1.0})
-    matplotlib.rcParams.update({'ytick.major.width':1.0})
-    matplotlib.rcParams.update({'axes.linewidth':1.0})
+        mpl.rcParams.update({'font.sans-serif':'Arial'})
+    mpl.rcParams.update({'font.size':fntsize})
+    mpl.rcParams.update({'axes.labelpad': labelpad})
+    mpl.rcParams.update({'axes.titlepad': labelpad})
+    mpl.rcParams.update({'xtick.direction':'out'})
+    mpl.rcParams.update({'ytick.direction':'out'})
+    mpl.rcParams.update({'xtick.major.width':1.0})
+    mpl.rcParams.update({'ytick.major.width':1.0})
+    mpl.rcParams.update({'axes.linewidth':1.0})
     if bilinear:
-        matplotlib.rcParams.update({'image.interpolation':'bilinear'})
-# end paper_figure_format
+        mpl.rcParams.update({'image.interpolation':'bilinear'})
+    mpl.rcParams["keymap.fullscreen"] = '' # To prevent f from being fullscreen
+# end figure_format
+
+def notes_format(fntsize=12, tickfntsize=10, font=None, bilinear=True, dark=False):
+    '''
+    A simplistic format meant for notes and easy display, allowing axes to be shown
+    without having to worry too much about the formatting of the axes.
+
+    Args:
+        fntsize (int, optional) : The fontsize of labels, titles.
+        tickfntsize (int, optional) : The fontsize of tick labels
+        font (int, optional) : The font, in None (default) uses Arial
+        bilinear (bool, optional) : If true (default) will use 'bilinear' interpolation option in imshow
+        dark (bool) : Use the dark theme.
+    '''
+    mpl.rcParams.update({'font.family':'sans-serif'})
+    if font is not None:
+        mpl.rcParams.update({'font.sans-serif':font})
+    else:
+        mpl.rcParams.update({'font.sans-serif':'Arial'})
+    mpl.rcParams.update({'font.size':fntsize})
+    mpl.rcParams.update({'font.size':fntsize})
+    mpl.rcParams.update({'xtick.labelsize':tickfntsize})
+    mpl.rcParams.update({'ytick.labelsize':tickfntsize})
+    mpl.rcParams.update({'axes.labelpad': 8})
+    mpl.rcParams.update({'axes.titlepad': 6})
+    mpl.rcParams.update({'xtick.direction':'out'})
+    mpl.rcParams.update({'ytick.direction':'out'})
+    mpl.rcParams.update({'xtick.major.width':1.0})
+    mpl.rcParams.update({'ytick.major.width':1.0})
+    mpl.rcParams.update({'axes.linewidth':1.0})
+    if bilinear:
+        mpl.rcParams.update({'image.interpolation':'bilinear'})
+    mpl.rcParams["keymap.fullscreen"] = '' # To prevent f from being fullscreen
+#
 
 def change_axes_colors(ax, c):
     '''
@@ -357,12 +541,24 @@ def make_colorbar(ax, cmap, cnorm, orientation='vertical', ticks=None, ticklabel
     Returns:
         The matplotlib.ColorbarBase object.
     '''
-    cb = matplotlib.colorbar.ColorbarBase(ax, cmap=cmap, norm=cnorm, orientation=orientation, ticks=ticks, alpha=None)
+    if hasattr(ax,"__display_default_flag__"):
+        orientation = "horizontal"
+        xtop = True
+    else:
+        top = False
+    if ticks is None:
+        vmin = cnorm.vmin
+        vmax = cnorm.vmax
+        ticks = [vmin, (vmin+vmax)/2, vmax]
+    cb = mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=cnorm, orientation=orientation, ticks=ticks, alpha=alpha)
     if ticklabels is not None:
         cb.set_ticklabels(ticklabels)
     if color != 'k':
-        matplotlib.rcParams['axes.edgecolor'] = color
+        mpl.rcParams['axes.edgecolor'] = color
         change_axes_colors(ax, color)
+    if xtop:
+        xaxis_top(ax)
+        ax.tick_params(pad=0)
     return cb
 # end make_colorbar
 
