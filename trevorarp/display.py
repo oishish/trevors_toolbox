@@ -52,7 +52,7 @@ class figure_inches():
         self.defaults = {
         'xinches':5.25,
         'yinches':5.0,
-        'xmargin':0.75,
+        'xmargin':0.8,
         'ymargin':0.65,
         'height':3.5,
         'width':4.0,
