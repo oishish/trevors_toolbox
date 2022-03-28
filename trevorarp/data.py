@@ -14,17 +14,31 @@ to be read in and unwrapped automatically.
 
 Format is
 {
-"Name":[trace/retrace_index, 
-(row_axis_index, row_axis_values, row_label),
-(col_axis_index, col_axis_values), 
+"Name":[trace/retrace_index, reshape_order,
+(column_axis_index, column_axis_values, column_label),
+(row_axis_index, row_axis_values, row_labels), 
 (dependent_1, ..., dependent_N), (dependent_1_label, ..., dependent_N_label)]}
+
+reshape_type is the "order" parameter to pass to reshape that determines how the elements are read
+out. Options are "C", "F", and "A" see the numpy.reshape documentation.
+
+trace/retrace_index should be negative if there is no such index
+
+The dependent variables (and labels) can be ("*", ix) where all data columns starting with ix onwards
+are assumed to be unspecified independent Variables. In which case the labels parameter (though it 
+should be present) is ignored and labels will be automatically generated.
 '''
 nSOTColumnSpec = {
-## "nSOT vs. Bias Voltage and Field", ['Trace Index', 'B Field Index','Bias Voltage Index','B Field','Bias Voltage'],['DC SSAA Output','Noise']
-"nSOT vs. Bias Voltage and Field":(0, (1,3,"B Field (T)"), (2,4,"SQUID Bias (V)"), (5,6), ("Feedback (V)", "Noise"))
+# "nSOT vs. Bias Voltage and Field", ['Trace Index', 'B Field Index','Bias Voltage Index','B Field','Bias Voltage'],['DC SSAA Output','Noise']
+"nSOT vs. Bias Voltage and Field":(0, "F", (1,3,"B Field (T)"), (2,4,"SQUID Bias (V)"), (5,6), ("Feedback (V)", "Noise")),
+# "nSOT Scan Data " + self.fileName, ['Retrace Index','X Pos. Index','Y Pos. Index','X Pos. Voltage', 'Y Pos. Voltage'],in_name_list
+"nSOT Scan Data unnamed":(0, "C", (1,3,"X Voltage"),(2,4,"Y Voltage"),('*',5),('*')),
+# 'FourTerminal MagneticField ' + self.Device_Name, ['Magnetic Field index', 'Gate Voltage index', 'Magnetic Field', 'Gate Voltage'],["Voltage", "Current", "Resistance", "Conductance"]
+"FourTerminal MagneticField Device Name":(-1, "C", (1,3,"Gate Voltage"), (0,2,"B Field"),(4,5,6,7), ("Voltage", "Current", "Resistance", "Conductance"))
+
 }
 
-def get_dv_data(identifier, remote=None, subfolder=None, retfilename=False):
+def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
     '''
     A function to retreive data from the datavault using a nanosquid identifier and return is as numpy arrays
 
@@ -34,6 +48,7 @@ def get_dv_data(identifier, remote=None, subfolder=None, retfilename=False):
             is the remote name for the labrad.connect function
         subfolder : If not None access a subfolder within the vault. Works like an argument of the
             datavault.cd function, i.e. takes a String or list of strings forming a path to the folder.
+        params (bool) : If True will return any parameters from the data vault file.
         retfilename : If True will return the name of the datavault file along with the data
     '''
     if remote is None:
@@ -55,8 +70,19 @@ def get_dv_data(identifier, remote=None, subfolder=None, retfilename=False):
     datafile = filename[0]
     dv.open(datafile)
     data = np.array(dv.get())
-    if retfilename:
+    
+    plist = dv.get_parameters()
+    parameters = dict()
+    if plist is not None:
+        for p in plist:
+            parameters[p[0]] = p[1]
+    
+    if retfilename and params:
+        return data, parameters, datafile
+    elif retfilename:
         return data, datafile
+    elif params:
+        return data, parameters
     else:
         return data
 
@@ -121,26 +147,31 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None):
     Returns in the format:
     row_values, colum_values, dependent_variables_trace, dependent_variables_retrace, labels
     Where dependent variables trace and retrace are in the order of the data vault and labels contains:
-    (row_label, column_label, dependent_1_label, ..., dependent_N_label)
+    (row_label, column_label, dependent_1_label, ..., dependent_N_label). If there is not distriction
+    between trace and retrace then dependent_variables_trace and dependent_variables_retrace will be the same.
     
     '''
     d, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True)
     
     sweeptype = fname.split(' - ')[2]
     if sweeptype in nSOTColumnSpec:
-        trix, cvars, rvars, dvars, dvars_labels = nSOTColumnSpec[sweeptype]
+        trix, order, cvars, rvars, dvars, dvars_labels = nSOTColumnSpec[sweeptype]
     else:
         raise ValueError("Unique Identifier does not correspond to a known 2D data type in nSOTColumnSpec")
     
     try:
-        trace = d[d[:,trix]==0,:]
-        retrace = d[d[:,trix]==1,:]
+        if trix >= 0:
+            trace = d[d[:,trix]==0,:]
+            retrace = d[d[:,trix]==1,:]
+        else:
+            trace = d
+            retrace = d
         
         rows = int(np.max(trace[:,rvars[0]])) + 1
         cols = int(np.max(trace[:,cvars[0]])) + 1
         
-        rvalues = np.reshape(trace[:,rvars[1]],(rows, cols), order='F')
-        cvalues = np.reshape(trace[:,cvars[1]],(rows, cols), order='F')
+        rvalues = np.reshape(trace[:,rvars[1]],(rows, cols), order=order)
+        cvalues = np.reshape(trace[:,cvars[1]],(rows, cols), order=order)
     except ValueError:
         print("Error reshaping the data array, check that the specification is correct.")
         print(format_exc())
@@ -148,10 +179,17 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None):
     
     dependent = []
     dependent_retrace = []
-    for ix in dvars:
-        dependent.append(np.reshape(trace[:,ix],(rows, cols), order='F'))
-        dependent_retrace.append(np.reshape(trace[:,ix],(rows, cols), order='F'))
-    
+    if dvars[0] == "*":
+        l, dcols = trace.shape
+        dvars_labels = []
+        for ix in range(dvars[1], dcols):
+            dependent.append(np.reshape(trace[:,ix],(rows, cols), order=order))
+            dependent_retrace.append(np.reshape(trace[:,ix],(rows, cols), order=order))
+            dvars_labels.append("Column "+str(ix))
+    else:
+        for ix in dvars:
+            dependent.append(np.reshape(trace[:,ix],(rows, cols), order=order))
+            dependent_retrace.append(np.reshape(trace[:,ix],(rows, cols), order=order))
     labels = (rvars[2], cvars[2], *dvars_labels)
     
     return rvalues, cvalues, dependent, dependent_retrace, labels
