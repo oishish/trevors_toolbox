@@ -7,6 +7,7 @@ import labrad
 
 from os.path import exists
 import numpy as np
+from traceback import format_exc
 
 '''
 nSOTColumnSpec allows generic nSOT data of particular types, corresponding to a specific filename
@@ -34,8 +35,9 @@ nSOTColumnSpec = {
 # "nSOT Scan Data " + self.fileName, ['Retrace Index','X Pos. Index','Y Pos. Index','X Pos. Voltage', 'Y Pos. Voltage'],in_name_list
 "nSOT Scan Data unnamed":(0, "C", (1,3,"X Voltage"),(2,4,"Y Voltage"),('*',5),('*')),
 # 'FourTerminal MagneticField ' + self.Device_Name, ['Magnetic Field index', 'Gate Voltage index', 'Magnetic Field', 'Gate Voltage'],["Voltage", "Current", "Resistance", "Conductance"]
-"FourTerminal MagneticField Device Name":(-1, "C", (1,3,"Gate Voltage"), (0,2,"B Field"),(4,5,6,7), ("Voltage", "Current", "Resistance", "Conductance"))
-
+"FourTerminal MagneticField Device Name":(-1, "C", (1,3,"Gate Voltage"), (0,2,"B Field"),(4,5,6,7), ("Voltage", "Current", "Resistance", "Conductance")),
+# "Four Terminal Landau Voltage Biased", ['Gate Voltage index', 'Magnetic Field index',"Gate Voltage", "Magnetic Field"], ["Voltage Lock-In", "Current Lock-In"]
+"Four Terminal Voltage Biased":(-1, "C", (0,2,"Gate Voltage"), (1,3,"B Field"),(4,5), ("Voltage", "Current"))
 }
 
 def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
@@ -131,7 +133,7 @@ def datavault2numpy(filename):
     return np.array(d)
 #
 
-def get_reshaped_nSOT_data(iden, remote=None, subfolder=None):
+def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
     '''
     Gets a data set of a known nSOT measurement type and unwraps it from columns into a useful
     dataset based on a known format. Assumes that it has a column that is the index for the fast
@@ -143,6 +145,7 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None):
             is the remote name for the labrad.connect function
         subfolder : If not None access a subfolder within the vault. Works like an argument of the
             datavault.cd function, i.e. takes a String or list of strings forming a path to the folder.
+        params (bool) : If True will return any parameters from the data vault file.
     
     Returns in the format:
     row_values, colum_values, dependent_variables_trace, dependent_variables_retrace, labels
@@ -151,7 +154,7 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None):
     between trace and retrace then dependent_variables_trace and dependent_variables_retrace will be the same.
     
     '''
-    d, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True)
+    d, dvparams, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True, params=True)
     
     sweeptype = fname.split(' - ')[2]
     if sweeptype in nSOTColumnSpec:
@@ -192,4 +195,7 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None):
             dependent_retrace.append(np.reshape(trace[:,ix],(rows, cols), order=order))
     labels = (rvars[2], cvars[2], *dvars_labels)
     
-    return rvalues, cvalues, dependent, dependent_retrace, labels
+    if params:
+        return rvalues, cvalues, dependent, dependent_retrace, labels, dvparams
+    else:
+        return rvalues, cvalues, dependent, dependent_retrace, labels
