@@ -21,7 +21,9 @@ Format is
 (dependent_1, ..., dependent_N), (dependent_1_label, ..., dependent_N_label)]}
 
 reshape_type is the "order" parameter to pass to reshape that determines how the elements are read
-out. Options are "C", "F", and "A" see the numpy.reshape documentation.
+out. Options are "C", "F", and "A" see the numpy.reshape documentation. Generally "F" means the slow
+axis is the first index and the fast index is the second.
+"C" means the fast axis is the second axis.
 
 trace/retrace_index should be negative if there is no such index
 
@@ -37,7 +39,9 @@ nSOTColumnSpec = {
 # 'FourTerminal MagneticField ' + self.Device_Name, ['Magnetic Field index', 'Gate Voltage index', 'Magnetic Field', 'Gate Voltage'],["Voltage", "Current", "Resistance", "Conductance"]
 "FourTerminal MagneticField Device Name":(-1, "C", (1,3,"Gate Voltage"), (0,2,"B Field"),(4,5,6,7), ("Voltage", "Current", "Resistance", "Conductance")),
 # "Four Terminal Landau Voltage Biased", ['Gate Voltage index', 'Magnetic Field index',"Gate Voltage", "Magnetic Field"], ["Voltage Lock-In", "Current Lock-In"]
-"Four Terminal Voltage Biased":(-1, "C", (0,2,"Gate Voltage"), (1,3,"B Field"),(4,5), ("Voltage", "Current"))
+"Four Terminal Voltage Biased":(-1, "C", (0,2,"Gate Voltage"), (1,3,"B Field"),(4,5), ("Voltage", "Current")),
+# "Dual Gate Voltage Biased Transport", ["p0 Index", "n0 Index","p0", "n0"], ["Vt", "Vb", "Voltage Lock-In", "Current Lock-In"]
+"Dual Gate Voltage Biased Transport":(-1, "F", (0,2,"p0"), (1,3,"n0"), (4,5,6,7), ("Vt", "Vb", "Voltage", "Current")),
 }
 
 def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
@@ -77,7 +81,10 @@ def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilena
     parameters = dict()
     if plist is not None:
         for p in plist:
-            parameters[p[0]] = p[1]
+            if isfloat(p[1]):
+                parameters[p[0]] = float(p[1])
+            else:
+                parameters[p[0]] = p[1]
     
     if retfilename and params:
         return data, parameters, datafile
@@ -133,6 +140,13 @@ def datavault2numpy(filename):
     return np.array(d)
 #
 
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
+
 def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
     '''
     Gets a data set of a known nSOT measurement type and unwraps it from columns into a useful
@@ -186,13 +200,17 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
         l, dcols = trace.shape
         dvars_labels = []
         for ix in range(dvars[1], dcols):
-            dependent.append(np.reshape(trace[:,ix],(rows, cols), order=order))
-            dependent_retrace.append(np.reshape(trace[:,ix],(rows, cols), order=order))
+            tr = np.reshape(trace[:,ix],(rows, cols), order=order)
+            dependent.append(np.array(tr))
+            rt = np.reshape(retrace[:,ix],(rows, cols), order=order)
+            dependent_retrace.append(np.array(rt))
             dvars_labels.append("Column "+str(ix))
     else:
         for ix in dvars:
-            dependent.append(np.reshape(trace[:,ix],(rows, cols), order=order))
-            dependent_retrace.append(np.reshape(trace[:,ix],(rows, cols), order=order))
+            tr = np.reshape(trace[:,ix],(rows, cols), order=order)
+            dependent.append(np.array(tr))
+            rt = np.reshape(retrace[:,ix],(rows, cols), order=order)
+            dependent_retrace.append(np.array(rt))
     labels = (rvars[2], cvars[2], *dvars_labels)
     
     if params:

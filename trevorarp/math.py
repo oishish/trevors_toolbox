@@ -104,6 +104,20 @@ def dydx(x, y):
 	return np.gradient(y)/np.gradient(x)
 # end dydx
 
+def divide_handel_zero(a,b):
+	'''
+	Divides a and b, if b is ever zero will return zero instead of throwing an Error.
+	
+	Args:
+		a : Numerator (Array Line)
+		b : Denominator (Array Line)
+	
+	Returns:
+		The element wize quotient of a and b, handeling the divide by zero case.
+	'''
+	return np.divide(a, b, out=np.zeros_like(a), where=b!=0)
+	
+
 def HTheta(x):
 	'''
 	Heaviside Theta function.

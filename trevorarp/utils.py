@@ -43,6 +43,12 @@ def put_at(inds, axis=-1, slc=(slice(None),)):
 	return (axis<0)*(Ellipsis,) + axis*slc + (inds,) + (-1-axis)*slc
 # end put_at
 
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
 
 '''
 Shift the rows of the given matrix $data horizontally by a shift given by the array $offset
