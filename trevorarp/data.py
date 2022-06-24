@@ -67,12 +67,13 @@ def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilena
         dv.cd(subfolder)
 
     drs, fls = dv.dir()
-    filename = [x for x in fls if identifier in x]
+    filename = [x for x in fls if identifier+" " in x] # the space prevents finding multiples of ten, for example iden-1 and iden-10
 
     if len(filename) == 0:
         raise IOError("Identifier " + identifier + " not found on this data vault.")
     elif len(filename) > 1:
         print("Warning files with duplicate identifiers detected, only the first one was retreived")
+        print(filename)
     datafile = filename[0]
     dv.open(datafile)
     data = np.array(dv.get())
