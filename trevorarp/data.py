@@ -147,6 +147,8 @@ def isfloat(num):
         return True
     except ValueError:
         return False
+    except TypeError:
+        return False
 
 def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
     '''
@@ -216,5 +218,65 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
     
     if params:
         return rvalues, cvalues, dependent, dependent_retrace, labels, dvparams
+    else:
+        return rvalues, cvalues, dependent, dependent_retrace, labels
+
+def reshape_from_spec(d, spec, params=None):
+    '''
+    Takes an arbitrary set of data and reshapes it according to the spec, following normal convention
+    
+    Args:
+        d (numpy array) : Data (as loaded straight from datavault) to reshape
+        spec (tuple): The specification for the reshape (follows normal convention)
+        params (tuple) : The datqavult parameters for the data, to return as normal
+    
+    Returns in the format:
+    row_values, colum_values, dependent_variables_trace, dependent_variables_retrace, labels
+    Where dependent variables trace and retrace are in the order of the data vault and labels contains:
+    (row_label, column_label, dependent_1_label, ..., dependent_N_label). If there is not distriction
+    between trace and retrace then dependent_variables_trace and dependent_variables_retrace will be the same.
+    
+    '''    
+    trix, order, cvars, rvars, dvars, dvars_labels = spec
+
+    try:
+        if trix >= 0:
+            trace = d[d[:,trix]==0,:]
+            retrace = d[d[:,trix]==1,:]
+        else:
+            trace = d
+            retrace = d
+        
+        rows = int(np.max(trace[:,rvars[0]])) + 1
+        cols = int(np.max(trace[:,cvars[0]])) + 1
+        
+        rvalues = np.reshape(trace[:,rvars[1]],(rows, cols), order=order)
+        cvalues = np.reshape(trace[:,cvars[1]],(rows, cols), order=order)
+    except ValueError:
+        print("Error reshaping the data array, check that the specification is correct.")
+        print(format_exc())
+        return
+    
+    dependent = []
+    dependent_retrace = []
+    if dvars[0] == "*":
+        l, dcols = trace.shape
+        dvars_labels = []
+        for ix in range(dvars[1], dcols):
+            tr = np.reshape(trace[:,ix],(rows, cols), order=order)
+            dependent.append(np.array(tr))
+            rt = np.reshape(retrace[:,ix],(rows, cols), order=order)
+            dependent_retrace.append(np.array(rt))
+            dvars_labels.append("Column "+str(ix))
+    else:
+        for ix in dvars:
+            tr = np.reshape(trace[:,ix],(rows, cols), order=order)
+            dependent.append(np.array(tr))
+            rt = np.reshape(retrace[:,ix],(rows, cols), order=order)
+            dependent_retrace.append(np.array(rt))
+    labels = (rvars[2], cvars[2], *dvars_labels)
+    
+    if params is not None:
+        return rvalues, cvalues, dependent, dependent_retrace, labels, params
     else:
         return rvalues, cvalues, dependent, dependent_retrace, labels
