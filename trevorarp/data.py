@@ -5,7 +5,7 @@ A module for data processing between from various formats
 import h5py
 import labrad
 
-from os.path import exists
+from os.path import exists, join
 import numpy as np
 from traceback import format_exc
 
@@ -76,7 +76,18 @@ def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilena
         print(filename)
     datafile = filename[0]
     dv.open(datafile)
-    data = np.array(dv.get())
+    
+    # Java can't handel large datasets (what a wimp)
+    # Cant do : data = np.array(dv.get())
+    # Instead we load directly
+    reg = cxn.registry
+    reg.cd(['', 'Servers', 'Data Vault', 'Repository'])
+    vault = reg.get('__default__')
+    subfile = dv.cd()
+    for x in subfile:
+        if x != '':
+            vault = join(vault, x +".dir")
+    data = datavault2numpy(join(vault,datafile))
     
     plist = dv.get_parameters()
     parameters = dict()
