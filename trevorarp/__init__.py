@@ -50,6 +50,8 @@ import trevorarp.processing as processing
 
 import trevorarp.data as data
 
+import trevorarp.nanosquid as nanosquid
+
 # '''
 # Code for processing things from older versions of the DAQ
 # '''
