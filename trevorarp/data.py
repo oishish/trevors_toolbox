@@ -36,12 +36,18 @@ nSOTColumnSpec = {
 "nSOT vs. Bias Voltage and Field":(0, "F", (1,3,"B Field (T)"), (2,4,"SQUID Bias (V)"), (5,6), ("Feedback (V)", "Noise")),
 # "nSOT Scan Data " + self.fileName, ['Retrace Index','X Pos. Index','Y Pos. Index','X Pos. Voltage', 'Y Pos. Voltage'],in_name_list
 "nSOT Scan Data unnamed":(0, "C", (1,3,"X Voltage"),(2,4,"Y Voltage"),('*',5),('*')),
+# 'FourTerminal + self.Device_Name, ['Gate Voltage index','Gate Voltage'],["Voltage", "Current", "Resistance", "Conductance"]
+"FourTerminal Device Name":(-1, "C", (0,1,"Gate Voltage"),(2,3,4,5), ("Voltage", "Current", "Resistance", "Conductance")),
 # 'FourTerminal MagneticField ' + self.Device_Name, ['Magnetic Field index', 'Gate Voltage index', 'Magnetic Field', 'Gate Voltage'],["Voltage", "Current", "Resistance", "Conductance"]
 "FourTerminal MagneticField Device Name":(-1, "C", (1,3,"Gate Voltage"), (0,2,"B Field"),(4,5,6,7), ("Voltage", "Current", "Resistance", "Conductance")),
+# 'FourTerminal MagneticField ' + self.Device_Name, ['Magnetic Field index', 'Magnetic Field'],["Voltage", "Current", "Resistance", "Conductance"]
+"1D Magnetic Field Device Name":(-1, "C", (0,1,"B Field"),(2,3,4,5), ("Voltage", "Current", "Resistance", "Conductance")),
 # "Four Terminal Landau Voltage Biased", ['Gate Voltage index', 'Magnetic Field index',"Gate Voltage", "Magnetic Field"], ["Voltage Lock-In", "Current Lock-In"]
 "Four Terminal Voltage Biased":(-1, "C", (0,2,"Gate Voltage"), (1,3,"B Field"),(4,5), ("Voltage", "Current")),
 # "Dual Gate Voltage Biased Transport", ["p0 Index", "n0 Index","p0", "n0"], ["Vt", "Vb", "Voltage Lock-In", "Current Lock-In"]
 "Dual Gate Voltage Biased Transport":(-1, "F", (0,2,"p0"), (1,3,"n0"), (4,5,6,7), ("Vt", "Vb", "Voltage", "Current")),
+# '2D SQUID Transport Line',['Trace_retrace','Bottom gate index','Top gate index','Bottom gate value','Top gate value'],['SQUID_x','SQUID_y','I_x','V_x']
+'2D SQUID Transport Line':(0, "C", (1,3,"Vb"), (2,4,"Vt"), (5,6,7,8), ('SQUID_x','SQUID_y','I_x','V_x')),
 }
 
 def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
