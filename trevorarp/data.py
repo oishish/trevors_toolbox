@@ -83,7 +83,7 @@ def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilena
         print("Warning files with duplicate identifiers detected, only the first one was retreived")
         print(filename)
     datafile = filename[0]
-    dv.open(datafile)
+
 
     # Java can't handel large datasets (what a wimp)
     # Cant do : data = np.array(dv.get())
@@ -97,14 +97,16 @@ def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilena
             vault = join(vault, x +".dir")
     data = datavault2numpy(join(vault,datafile))
 
-    plist = dv.get_parameters()
-    parameters = dict()
-    if plist is not None:
-        for p in plist:
-            if isfloat(p[1]):
-                parameters[p[0]] = float(p[1])
-            else:
-                parameters[p[0]] = p[1]
+    if params:
+        dv.open(datafile)
+        plist = dv.get_parameters()
+        parameters = dict()
+        if plist is not None:
+            for p in plist:
+                if isfloat(p[1]):
+                    parameters[p[0]] = float(p[1])
+                else:
+                    parameters[p[0]] = p[1]
 
     if retfilename and params:
         return data, parameters, datafile
