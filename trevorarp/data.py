@@ -156,7 +156,13 @@ def datavault2numpy(filename):
         filename = filename + '.hdf5'
     if not exists(filename):
         raise IOError("File " + str(filename) + " not found.")
-    f = h5py.File(filename)
+    try:
+        f = h5py.File(filename)
+    except OSError:
+        print("--------------------------------------------------------------")
+        print("Could not open file", filename, "it may be locked for editing.")
+        print("--------------------------------------------------------------")
+        return None
     dv = f['DataVault']
     d = dv[...].tolist()
     return np.array(d)
@@ -192,8 +198,10 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
     between trace and retrace then dependent_variables_trace and dependent_variables_retrace will be the same.
 
     '''
-    d, dvparams, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True, params=True)
-
+    if params:
+        d, dvparams, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True, params=True)
+    else:
+        d, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True, params=False)
     sweeptype = fname.split(' - ')[2]
     if sweeptype in nSOTColumnSpec:
         trix, order, cvars, rvars, dvars, dvars_labels = nSOTColumnSpec[sweeptype]
@@ -210,6 +218,12 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
 
         rows = int(np.max(trace[:,rvars[0]])) + 1
         cols = int(np.max(trace[:,cvars[0]])) + 1
+
+        #While data is still streeaming in rows, cols may not match the acutal number of rows
+        nd = len(trace[:,rvars[1]])
+        if rows*cols > nd:
+            rows = nd//cols
+            print(iden, "is not complete, loading partially.")
 
         rvalues = np.reshape(trace[:,rvars[1]],(rows, cols), order=order)
         cvalues = np.reshape(trace[:,cvars[1]],(rows, cols), order=order)
