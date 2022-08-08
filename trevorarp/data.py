@@ -5,7 +5,7 @@ A module for data processing between from various formats
 import h5py
 import labrad
 
-from os.path import exists
+from os.path import exists, join
 import numpy as np
 from traceback import format_exc
 
@@ -36,8 +36,12 @@ nSOTColumnSpec = {
 "nSOT vs. Bias Voltage and Field":(0, "F", (1,3,"B Field (T)"), (2,4,"SQUID Bias (V)"), (5,6), ("Feedback (V)", "Noise")),
 # "nSOT Scan Data " + self.fileName, ['Retrace Index','X Pos. Index','Y Pos. Index','X Pos. Voltage', 'Y Pos. Voltage'],in_name_list
 "nSOT Scan Data unnamed":(0, "C", (1,3,"X Voltage"),(2,4,"Y Voltage"),('*',5),('*')),
+# 'FourTerminal + self.Device_Name, ['Gate Voltage index','Gate Voltage'],["Voltage", "Current", "Resistance", "Conductance"]
+"FourTerminal Device Name":(-1, "C", (0,1,"Gate Voltage"),(2,3,4,5), ("Voltage", "Current", "Resistance", "Conductance")),
 # 'FourTerminal MagneticField ' + self.Device_Name, ['Magnetic Field index', 'Gate Voltage index', 'Magnetic Field', 'Gate Voltage'],["Voltage", "Current", "Resistance", "Conductance"]
 "FourTerminal MagneticField Device Name":(-1, "C", (1,3,"Gate Voltage"), (0,2,"B Field"),(4,5,6,7), ("Voltage", "Current", "Resistance", "Conductance")),
+# 'FourTerminal MagneticField ' + self.Device_Name, ['Magnetic Field index', 'Magnetic Field'],["Voltage", "Current", "Resistance", "Conductance"]
+"1D Magnetic Field Device Name":(-1, "C", (0,1,"B Field"),(2,3,4,5), ("Voltage", "Current", "Resistance", "Conductance")),
 # "Four Terminal Landau Voltage Biased", ['Gate Voltage index', 'Magnetic Field index',"Gate Voltage", "Magnetic Field"], ["Voltage Lock-In", "Current Lock-In"]
 "Four Terminal Voltage Biased":(-1, "C", (0,2,"Gate Voltage"), (1,3,"B Field"),(4,5), ("Voltage", "Current")),
 # "Dual Gate Voltage Biased Transport", ["p0 Index", "n0 Index","p0", "n0"], ["Vt", "Vb", "Voltage Lock-In", "Current Lock-In"]
@@ -80,7 +84,18 @@ def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilena
         print(filename)
     datafile = filename[0]
     dv.open(datafile)
-    data = np.array(dv.get())
+
+    # Java can't handel large datasets (what a wimp)
+    # Cant do : data = np.array(dv.get())
+    # Instead we load directly
+    reg = cxn.registry
+    reg.cd(['', 'Servers', 'Data Vault', 'Repository'])
+    vault = reg.get('__default__')
+    subfile = dv.cd()
+    for x in subfile:
+        if x != '':
+            vault = join(vault, x +".dir")
+    data = datavault2numpy(join(vault,datafile))
 
     plist = dv.get_parameters()
     parameters = dict()
