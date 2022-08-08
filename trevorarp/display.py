@@ -50,7 +50,7 @@ class figure_inches():
 
     def __init__(self, name=None, xinches="1", yinches="1", default=None, style='notes', dark=False):
         self.defaults = {
-        'xinches':5.25,
+        'xinches':5.0,
         'yinches':5.0,
         'xmargin':0.8,
         'ymargin':0.65,
@@ -65,7 +65,7 @@ class figure_inches():
                 self.Nx = int(xinches)
             except:
                 raise ValueError("Invalid str to specify number of default figures.")
-            self.xinches = self.defaults['xinches'] + (self.Nx-1)*(self.defaults['width']+self.defaults['xint'])
+            self.xinches = self.defaults['xinches'] + (self.Nx-1)*(self.defaults['width']+self.defaults['xint']-0.5)
             self.default_xstart = self.defaults['xmargin']
         else:
             self.Nx = 0
