@@ -47,7 +47,7 @@ nSOTColumnSpec = {
 # "Dual Gate Voltage Biased Transport", ["p0 Index", "n0 Index","p0", "n0"], ["Vt", "Vb", "Voltage Lock-In", "Current Lock-In"]
 "Dual Gate Voltage Biased Transport":(-1, "F", (0,2,"p0"), (1,3,"n0"), (4,5,6,7), ("Vt", "Vb", "Voltage", "Current")),
 # '2D SQUID Transport Line',['Trace_retrace','Bottom gate index','Top gate index','Bottom gate value','Top gate value'],['SQUID_x','SQUID_y','I_x','V_x']
-'2D SQUID Transport Line':(0, "C", (1,3,"Vb"), (2,4,"Vt"), (5,6,7,8), ('SQUID_x','SQUID_y','I_x','V_x')),
+'2D SQUID Transport Line':(0, "C", (1,3,"Vb"), (2,4,"Vt"), (5,6,7,8), ('I_x','V_x', 'SQUID_x','SQUID_y')),
 }
 
 def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
