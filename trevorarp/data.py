@@ -1,7 +1,6 @@
 '''
 A module for data processing between from various formats
 '''
-
 import h5py
 import labrad
 
@@ -50,6 +49,10 @@ nSOTColumnSpec = {
 '2D SQUID Transport Line':(0, "C", (1,3,"Vb"), (2,4,"Vt"), (5,6,7,8), ('SQUID_x','SQUID_y','I_x','V_x')),
 # dv.new('2D SQUID n0p0',['Trace_retrace','n0 index','p0 index', 'n0', 'p0','Bottom gate value','Top gate value'],['SQUID_x','SQUID_y','I_x','V_x'])
 '2D SQUID n0p0':(0,"C",(1,3,'n0'),(2,4,'p0'), (5,6,7,8,9,10), ('Vb','Vt','SQUID_x','SQUID_y','I_x','V_x')),
+# 'SQUID vs 2D Vector Magnet',['theta index','Bz index', 'theta', 'Bz'],['Bx','By','SQUID DC']
+'SQUID vs 2D Vector Magnet':(-1, "C", (1,3,"Bz"), (0,2,"theta"),(4,5,6), ('Bx','By','SQUID DC')),
+# '1D Displacement field vs DC bias sweep',['Trace_retrace','DC bias index','Bottom gate index','Top gate index','DC bias value','Bottom gate value', 'Top gate value'],['SQUID 1wx','Idc','Vac','Iac']
+'1D Displacement field vs DC bias sweep':(0, "C", (1,4,"Vbias"), (3,6,"Vt"), (5,7,8,9,10), ('Vb','SQUID_x','I_dc','V_ac','I_ac')),
 }
 
 def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
@@ -177,7 +180,7 @@ def isfloat(num):
     except TypeError:
         return False
 
-def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
+def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False, offbyone=False):
     '''
     Gets a data set of a known nSOT measurement type and unwraps it from columns into a useful
     dataset based on a known format. Assumes that it has a column that is the index for the fast
@@ -190,6 +193,7 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
         subfolder : If not None access a subfolder within the vault. Works like an argument of the
             datavault.cd function, i.e. takes a String or list of strings forming a path to the folder.
         params (bool) : If True will return any parameters from the data vault file.
+        offbyone (bool) : Correct for the fact that some heathens 1 index their data.
 
     Returns in the format:
     row_values, colum_values, dependent_variables_trace, dependent_variables_retrace, labels
@@ -204,66 +208,23 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False):
         d, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True, params=False)
     sweeptype = fname.split(' - ')[2]
     if sweeptype in nSOTColumnSpec:
-        trix, order, cvars, rvars, dvars, dvars_labels = nSOTColumnSpec[sweeptype]
+        # trix, order, cvars, rvars, dvars, dvars_labels = nSOTColumnSpec[sweeptype]
+        if params:
+            return reshape_from_spec(d, nSOTColumnSpec[sweeptype], params=params, offbyone=offbyone, iden=iden)
+        else:
+            return reshape_from_spec(d, nSOTColumnSpec[sweeptype], offbyone=offbyone, iden=iden)
     else:
         raise ValueError("Unique Identifier does not correspond to a known 2D data type in nSOTColumnSpec")
+#
 
-    try:
-        if trix >= 0:
-            trace = d[d[:,trix]==0,:]
-            retrace = d[d[:,trix]==1,:]
-        else:
-            trace = d
-            retrace = d
-
-        rows = int(np.max(trace[:,rvars[0]])) + 1
-        cols = int(np.max(trace[:,cvars[0]])) + 1
-
-        #While data is still streeaming in rows, cols may not match the acutal number of rows
-        nd = len(trace[:,rvars[1]])
-        if rows*cols > nd:
-            rows = nd//cols
-            print(iden, "is not complete, loading partially.")
-
-        rvalues = np.reshape(trace[:,rvars[1]],(rows, cols), order=order)
-        cvalues = np.reshape(trace[:,cvars[1]],(rows, cols), order=order)
-    except ValueError:
-        print("Error reshaping the data array, check that the specification is correct.")
-        print(format_exc())
-        return
-
-    dependent = []
-    dependent_retrace = []
-    if dvars[0] == "*":
-        l, dcols = trace.shape
-        dvars_labels = []
-        for ix in range(dvars[1], dcols):
-            tr = np.reshape(trace[:,ix],(rows, cols), order=order)
-            dependent.append(np.array(tr))
-            rt = np.reshape(retrace[:,ix],(rows, cols), order=order)
-            dependent_retrace.append(np.array(rt))
-            dvars_labels.append("Column "+str(ix))
-    else:
-        for ix in dvars:
-            tr = np.reshape(trace[:,ix],(rows, cols), order=order)
-            dependent.append(np.array(tr))
-            rt = np.reshape(retrace[:,ix],(rows, cols), order=order)
-            dependent_retrace.append(np.array(rt))
-    labels = (rvars[2], cvars[2], *dvars_labels)
-
-    if params:
-        return rvalues, cvalues, dependent, dependent_retrace, labels, dvparams
-    else:
-        return rvalues, cvalues, dependent, dependent_retrace, labels
-
-def reshape_from_spec(d, spec, params=None, offbyone=False):
+def reshape_from_spec(d, spec, params=None, offbyone=False, iden=None):
     '''
     Takes an arbitrary set of data and reshapes it according to the spec, following normal convention
 
     Args:
         d (numpy array) : Data (as loaded straight from datavault) to reshape
         spec (tuple): The specification for the reshape (follows normal convention)
-        params (tuple) : The datqavult parameters for the data, to return as normal
+        params (tuple) : The datavult parameters for the data, to return as normal
         offbyone (bool) : Correct for the fact that some heathens 1 index their data.
 
     Returns in the format:
@@ -289,6 +250,16 @@ def reshape_from_spec(d, spec, params=None, offbyone=False):
         else:
             rows = int(np.max(trace[:,rvars[0]])) + 1
             cols = int(np.max(trace[:,cvars[0]])) + 1
+
+        #While data is still streeaming in rows, cols may not match the acutal number of rows
+        nd = len(trace[:,rvars[1]])
+        if rows*cols > nd:
+            print(iden, "is not complete, loading partially.")
+            print(nd, rows, cols)
+            rows = nd//cols
+        elif rows*cols < nd:
+            print(iden, "warning row numbers off by one, attempting to correct.")
+            rows += 1
 
         rvalues = np.reshape(trace[:,rvars[1]],(rows, cols), order=order)
         cvalues = np.reshape(trace[:,cvars[1]],(rows, cols), order=order)

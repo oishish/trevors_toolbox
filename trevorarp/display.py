@@ -4,7 +4,7 @@ display.py
 A module for general functions related to displaying information, for functions and classes related
 to displaying specific kinds of information see visual.py
 
-Last updated November 2021
+Last updated August 2022
 
 by Trevor Arp
 All Rights Reserved
@@ -49,16 +49,19 @@ class figure_inches():
     '''
 
     def __init__(self, name=None, xinches="1", yinches="1", default=None, style='notes', dark=False):
-        self.defaults = {
-        'xinches':5.0,
-        'yinches':5.0,
-        'xmargin':0.8,
-        'ymargin':0.65,
-        'height':3.5,
-        'width':4.0,
-        'xint':0.8,
-        'yint':0.8
-        }
+        if default is not None:
+            self.defaults = default
+        else:
+            self.defaults = {
+            'xinches':5.0,
+            'yinches':5.0,
+            'xmargin':0.8,
+            'ymargin':0.65,
+            'height':3.5,
+            'width':4.0,
+            'xint':0.8,
+            'yint':0.8
+            }
         self.default_figs_x = 0
         if isinstance(xinches,str):
             try:
@@ -361,6 +364,31 @@ class figure_inches():
     # make_dualx_axes
 # end figure_inches
 
+def interactive_image(fig, ax, X, Y, data):
+    '''
+    Add a standard set of interactive elements to an image plot
+
+    Args:
+        fig : Either the matplotlib figure or the figure_axes object to apply effects to.
+        ax : The specific axes to apply the effects to.
+        X : X (column) axis data, either a 1D array or 2D meshgrid (if meshgrid draws from X[0,:])
+        Y : Y (row) axis data, either a 1D array or 2D meshgrid (if meshgrid draws from Y[:,0])
+    '''
+    if isinstance(fig, figure_inches):
+        fig = fig.get_fig()
+    if len(X.shape) > 1:
+        X = X[0,:]
+    if len(Y.shape) > 1:
+        Y = Y[:,0]
+
+    def onclick(event):
+        if event.inaxes==ax:
+            xix = np.searchsorted(X,event.xdata)
+            yix = np.searchsorted(Y,event.ydata)
+            print('x=%f, y=%f, z=%f'%(event.xdata, event.ydata, data[yix, xix]))
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
+#
+
 def yaxis_right(ax):
     '''
     A simple function to move the y-axis of a matplotlib plot to the right.
@@ -507,7 +535,10 @@ def colorscale_map(darray, mapname='viridis', cmin=None, cmax=None, centerzero=F
         Tuple containing (cmap, norm, sm) where cmap is the Colormap, norm is the
         Normalization and sm is the ScalarMappable.
     '''
-    cmap = plt.get_cmap(mapname)
+    if mapname == 'cmbipolar':
+        cmap = get_cmbipolar()
+    else:
+        cmap = plt.get_cmap(mapname)
     if truncate is not None:
         cmap = truncate_colormap(cmap, truncate[0], truncate[1])
     if cmin is None:
@@ -738,3 +769,58 @@ def wavelength_colormap(N=250):
 	scalarMap.set_array(w)
 	return cmap, cnorm, scalarMap
 # end wavelength_colormap
+
+def hex_to_rgb(value):
+    '''
+    From: https://towardsdatascience.com/beautiful-custom-colormaps-with-matplotlib-5bab3d1f0e72
+    Converts hex to rgb colours
+    value: string of 6 characters representing a hex colour.
+    Returns: list length 3 of RGB values
+    '''
+    value = value.strip("#") # removes hash symbol if present
+    lv = len(value)
+    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+
+def rgb_to_dec(value):
+    '''
+    From: https://towardsdatascience.com/beautiful-custom-colormaps-with-matplotlib-5bab3d1f0e72
+    Converts rgb to decimal colours (i.e. divides each value by 256)
+    value: list (length 3) of RGB values
+    Returns: list (length 3) of decimal values
+    '''
+    return [v/256 for v in value]
+
+def get_continuous_cmap(hex_list, float_list=None):
+    '''
+    From: https://towardsdatascience.com/beautiful-custom-colormaps-with-matplotlib-5bab3d1f0e72
+    creates and returns a color map that can be used in heat map figures.
+        If float_list is not provided, colour map graduates linearly between each color in hex_list.
+        If float_list is provided, each color in hex_list is mapped to the respective location in float_list.
+
+        Parameters
+        ----------
+        hex_list: list of hex code strings
+        float_list: list of floats between 0 and 1, same length as hex_list. Must start with 0 and end with 1.
+
+        Returns
+        ----------
+        colour map'''
+    rgb_list = [rgb_to_dec(hex_to_rgb(i)) for i in hex_list]
+    if float_list:
+        pass
+    else:
+        float_list = list(np.linspace(0,1,len(rgb_list)))
+
+    cdict = dict()
+    for num, col in enumerate(['red', 'green', 'blue']):
+        col_list = [[float_list[i], rgb_list[i][num], rgb_list[i][num]] for i in range(len(float_list))]
+        cdict[col] = col_list
+    cmp = LinearSegmentedColormap('my_cmp', segmentdata=cdict, N=256)
+    return cmp
+
+def get_cmbipolar(lsp=500):
+    vals = ['#00b4ff', '#00b2ff', '#01affe', '#01adfe', '#01aafd', '#02a8fd', '#02a5fc', '#02a3fc', '#03a1fb', '#039efb', '#039cfa', '#0499fa', '#0497f9', '#0494f9', '#0592f8', '#058ff8', '#058df7', '#068af7', '#0688f6', '#0785f6', '#0783f5', '#0780f5', '#087ef4', '#087bf4', '#0879f3', '#0977f3', '#0974f2', '#0972f2', '#0a6ff1', '#0a6df1', '#0a6af0', '#0b68f0', '#0b65f0', '#0b63ef', '#0c60ef', '#0c5eee', '#0c5bee', '#0d59ed', '#0d56ed', '#0d54ec', '#0e52ec', '#0e4feb', '#0e4deb', '#0f4aea', '#0f48ea', '#0f45e9', '#1043e9', '#1040e8', '#103ee8', '#113be7', '#1139e7', '#1136e6', '#1234e6', '#1231e5', '#132fe5', '#132ce4', '#132ae4', '#1428e3', '#1425e3', '#1423e2', '#1520e2', '#151ee1', '#151be1', '#1619e1', '#1616e0', '#1616dd', '#1515d9', '#1515d6', '#1515d2', '#1414cf', '#1414cb', '#1414c8', '#1313c4', '#1313c1', '#1313bd', '#1212ba', '#1212b6', '#1212b3', '#1111af', '#1111ac', '#1111a8', '#1010a5', '#1010a1', '#0f0f9e', '#0f0f9a', '#0f0f97', '#0e0e93', '#0e0e90', '#0e0e8c', '#0d0d89', '#0d0d85', '#0d0d82', '#0c0c7e', '#0c0c7b', '#0c0c77', '#0b0b74', '#0b0b70', '#0b0b6d', '#0a0a69', '#0a0a66', '#0a0a62', '#09095f', '#09095b', '#090958', '#080854', '#080851', '#08084d', '#07074a', '#070746', '#070743', '#06063f', '#06063c', '#060638', '#050535', '#050531', '#04042e', '#04042a', '#040427', '#030323', '#030320', '#03031c', '#020219', '#020215', '#020212', '#01010e', '#01010b', '#010107', '#000004', '#000000', '#040000', '#080000', '#0c0000', '#100000', '#140000', '#180000', '#1c0000', '#200000', '#240000', '#280000', '#2c0000', '#300000', '#350000', '#390000', '#3d0000', '#410000', '#450000', '#490000', '#4d0000', '#510000', '#550000', '#590000', '#5d0000', '#610000', '#650000', '#690000', '#6d0000', '#710000', '#750000', '#790000', '#7d0000', '#810000', '#850000', '#890000', '#8d0000', '#910000', '#960000', '#9a0000', '#9e0000', '#a20000', '#a60000', '#aa0000', '#ae0000', '#b20000', '#b60000', '#ba0000', '#be0000', '#c20000', '#c60000', '#ca0000', '#ce0000', '#d20000', '#d60000', '#da0000', '#de0000', '#e20000', '#e60000', '#ea0000', '#ee0000', '#f20000', '#f70000', '#fb0000', '#ff0000', '#ff0400', '#fe0701', '#fe0b01', '#fe0f02', '#fe1302', '#fd1603', '#fd1a03', '#fd1e04', '#fd2104', '#fc2505', '#fc2905', '#fc2d06', '#fc3006', '#fb3407', '#fb3807', '#fb3b08', '#fa3f08', '#fa4309', '#fa4709', '#fa4a0a', '#f94e0a', '#f9520b', '#f9550b', '#f9590c', '#f85d0c', '#f8610d', '#f8640d', '#f8680e', '#f76c0e', '#f76f0f', '#f7730f', '#f77710', '#f67b10', '#f67e11', '#f68211', '#f58612', '#f58912', '#f58d13', '#f59113', '#f49514', '#f49814', '#f49c15', '#f4a015', '#f3a316', '#f3a716', '#f3ab17', '#f3af17', '#f2b218', '#f2b618', '#f2ba19', '#f1bd19', '#f1c11a', '#f1c51a', '#f1c91b', '#f0cc1b', '#f0d01c', '#f0d41c', '#f0d71d', '#efdb1d', '#efdf1e', '#efe31e', '#efe61f', '#eeea1f', '#eeee20']
+    newcmp = get_continuous_cmap(vals)
+    return newcmp
+#
