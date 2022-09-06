@@ -17,6 +17,7 @@ Format is
 "Name":[trace/retrace_index, reshape_order,
 (column_axis_index, column_axis_values, column_label),
 (row_axis_index, row_axis_values, row_labels),
+(zvar_axis, index, zvar_axis_values, zvar_label), # Optional
 (dependent_1, ..., dependent_N), (dependent_1_label, ..., dependent_N_label)]}
 
 reshape_type is the "order" parameter to pass to reshape that determines how the elements are read
@@ -208,11 +209,16 @@ def get_reshaped_nSOT_data(iden, remote=None, subfolder=None, params=False, offb
         d, fname = get_dv_data(iden, remote=remote, subfolder=subfolder, retfilename=True, params=False)
     sweeptype = fname.split(' - ')[2]
     if sweeptype in nSOTColumnSpec:
-        # trix, order, cvars, rvars, dvars, dvars_labels = nSOTColumnSpec[sweeptype]
-        if params:
-            return reshape_from_spec(d, nSOTColumnSpec[sweeptype], params=params, offbyone=offbyone, iden=iden)
+        if len(nSOTColumnSpec[sweeptype]) > 6:
+            if params:
+                return reshape_from_spec_3d(d, nSOTColumnSpec[sweeptype], params=params, offbyone=offbyone, iden=iden)
+            else:
+                return reshape_from_spec_3d(d, nSOTColumnSpec[sweeptype], offbyone=offbyone, iden=iden)
         else:
-            return reshape_from_spec(d, nSOTColumnSpec[sweeptype], offbyone=offbyone, iden=iden)
+            if params:
+                return reshape_from_spec(d, nSOTColumnSpec[sweeptype], params=params, offbyone=offbyone, iden=iden)
+            else:
+                return reshape_from_spec(d, nSOTColumnSpec[sweeptype], offbyone=offbyone, iden=iden)
     else:
         raise ValueError("Unique Identifier does not correspond to a known 2D data type in nSOTColumnSpec")
 #
@@ -291,3 +297,82 @@ def reshape_from_spec(d, spec, params=None, offbyone=False, iden=None):
         return rvalues, cvalues, dependent, dependent_retrace, labels, params
     else:
         return rvalues, cvalues, dependent, dependent_retrace, labels
+#
+
+def reshape_from_spec_3d(d, spec, params=None, offbyone=False, iden=None):
+    '''
+    Takes an arbitrary set of data and reshapes it according to the spec, following normal convention
+
+    Args:
+        d (numpy array) : Data (as loaded straight from datavault) to reshape
+        spec (tuple): The specification for the reshape (follows normal convention)
+        params (tuple) : The datavult parameters for the data, to return as normal
+        offbyone (bool) : Correct for the fact that some heathens 1 index their data.
+
+    Returns in the format:
+    row_values, colum_values, dependent_variables_trace, dependent_variables_retrace, labels
+    Where dependent variables trace and retrace are in the order of the data vault and labels contains:
+    (row_label, column_label, dependent_1_label, ..., dependent_N_label). If there is not distriction
+    between trace and retrace then dependent_variables_trace and dependent_variables_retrace will be the same.
+
+    '''
+    trix, order, cvars, rvars, zvars, dvars, dvars_labels = spec
+
+    try:
+        if trix >= 0:
+            trace = d[d[:,trix]==0,:]
+            retrace = d[d[:,trix]==1,:]
+        else:
+            trace = d
+            retrace = d
+
+        if offbyone:
+            rows = int(np.max(trace[:,rvars[0]]))# + 1
+            cols = int(np.max(trace[:,cvars[0]]))# + 1
+            znum = int(np.max(trace[:,zvars[0]]))# + 1
+        else:
+            rows = int(np.max(trace[:,rvars[0]])) + 1
+            cols = int(np.max(trace[:,cvars[0]])) + 1
+            znum = int(np.max(trace[:,zvars[0]])) + 1
+
+        #While data is still streeaming in rows, cols may not match the acutal number of rows
+        # nd = len(trace[:,rvars[1]])
+        # if rows*cols > nd:
+        #     print(iden, "is not complete, loading partially.")
+        #     print(nd, rows, cols)
+        #     rows = nd//cols
+        # elif rows*cols < nd:
+        #     print(iden, "warning row numbers off by one, attempting to correct.")
+        #     rows += 1
+
+        rvalues = np.reshape(trace[:,rvars[1]],(znum, rows, cols), order=order)
+        cvalues = np.reshape(trace[:,cvars[1]],(znum, rows, cols), order=order)
+        zvalues = np.reshape(trace[:,zvars[1]],(znum, rows, cols), order=order)
+    except ValueError:
+        print("Error reshaping the data array, check that the specification is correct.")
+        print(format_exc())
+        return
+
+    dependent = []
+    dependent_retrace = []
+    if dvars[0] == "*":
+        l, dcols = trace.shape
+        dvars_labels = []
+        for ix in range(dvars[1], dcols):
+            tr = np.reshape(trace[:,ix],(znum, rows, cols), order=order)
+            dependent.append(np.array(tr))
+            rt = np.reshape(retrace[:,ix],(znum, rows, cols), order=order)
+            dependent_retrace.append(np.array(rt))
+            dvars_labels.append("Column "+str(ix))
+    else:
+        for ix in dvars:
+            tr = np.reshape(trace[:,ix],(znum, rows, cols), order=order)
+            dependent.append(np.array(tr))
+            rt = np.reshape(retrace[:,ix],(znum, rows, cols), order=order)
+            dependent_retrace.append(np.array(rt))
+    labels = (rvars[2], cvars[2], zvars[2], *dvars_labels)
+
+    if params is not None:
+        return rvalues, cvalues, zvalues, dependent, dependent_retrace, labels, params
+    else:
+        return rvalues, cvalues, zvalues, dependent, dependent_retrace, labels
