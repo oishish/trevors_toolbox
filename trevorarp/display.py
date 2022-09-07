@@ -42,26 +42,30 @@ class figure_inches():
         yinches (float) : The height of the figure in inches. To make several default size
             figures, pass the number of rows of figures (in a grid layout) as a string. For example,
             give yinches="2" to make the figure large enough for two rows of default figures.
+        defaults (dict) : A dictionary of default values (xinches, width, etc.) which will overwrite the
+            built in defaults.
         style (str) : The style to use. Options are "notes" style (default) as defined in notes_format
             of the "figure" format for customizing papers as defined in figure_format. Style will not be
             set if style (i.e. rcParams) has already been modified.
         dark (bool) : Use the dark theme
     '''
 
-    def __init__(self, name=None, xinches="1", yinches="1", default=None, style='notes', dark=False):
-        if default is not None:
-            self.defaults = default
-        else:
-            self.defaults = {
-            'xinches':5.0,
-            'yinches':5.0,
-            'xmargin':0.8,
-            'ymargin':0.65,
-            'height':3.5,
-            'width':4.0,
-            'xint':0.8,
-            'yint':0.8
-            }
+    def __init__(self, name=None, xinches="1", yinches="1", defaults=None, style='notes', dark=False):
+        self.defaults = {
+        'xinches':5.0,
+        'yinches':5.0,
+        'xmargin':0.8,
+        'ymargin':0.65,
+        'height':3.5,
+        'width':4.0,
+        'xint':0.8,
+        'yint':0.8
+        }
+        if defaults is not None:
+            for k, v in defaults.items():
+                if k in self.defaults:
+                    self.defaults[k] = defaults[k]
+
         self.default_figs_x = 0
         if isinstance(xinches,str):
             try:
@@ -166,7 +170,7 @@ class figure_inches():
         return plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches], zorder=zorder, projection='3d')
     # make_3daxes
 
-    def make_img_axes(self, spec=None, zorder=1):
+    def make_img_axes(self, spec=None, cbpercent=0.5, zorder=1):
         '''
         Makes and returns a matplotlib Axes object with a default colorbar.
         To easily make a colorbar in the title area.
@@ -175,6 +179,8 @@ class figure_inches():
             spec : A list of the dimensions of the axis [left, bottom, width, height] in inches
             zorder (int, optional) : The "z-axis" order of the axis, Axes with a higher zorder will appear
                 on top of axes with a lower zorder.
+            cbpercent (float): The percentage of the width of the axes that the colorbar should use to define
+                it's width, i.e. cbwidth = cbpercent*width.
         '''
         if spec is None:
             self.default_figs_x += 1
@@ -194,7 +200,7 @@ class figure_inches():
         ax = plt.axes([xpos, ypos, width, height], zorder=zorder)
 
         margin = 0.1/self.yinches #min([0.1*height]
-        cbwidth = 0.62*width
+        cbwidth = cbpercent*width
         cbheight = 0.2/self.yinches
         cb = plt.axes([xpos+width-cbwidth, ypos+height+margin, cbwidth, cbheight], zorder=zorder)
         xaxis_top(cb)
@@ -362,6 +368,18 @@ class figure_inches():
         axt.tick_params('x', colors=color_top)
         return axl, axr, axb, axt
     # make_dualx_axes
+
+    def figtext(xcoord, ycoord, *args, **kwargs):
+        '''
+        Wrapper for plt.figtext, takes same arguments except in units of inches, and converts then to figure units
+
+        Args:
+            xcoord (float) : X Coordinate in inches
+            ycoord (float) : Y Coordinate in inches
+            args : positional arguments to pass to pyplot.figtext
+            kwargs : keyword arguments to pass to pyplot.figtext
+        '''
+        plt.figtext(xcoord/self.xinches, ycoord/self.yinches, *args, **kwargs)
 # end figure_inches
 
 def interactive_image(fig, ax, X, Y, data):
@@ -780,7 +798,6 @@ def hex_to_rgb(value):
     value = value.strip("#") # removes hash symbol if present
     lv = len(value)
     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
-
 
 def rgb_to_dec(value):
     '''
