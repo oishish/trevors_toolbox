@@ -56,6 +56,8 @@ nSOTColumnSpec = {
 '1D Displacement field vs DC bias sweep':(0, "C", (1,4,"Vbias"), (3,6,"Vt"), (5,7,8,9,10), ('Vb','SQUID_x','I_dc','I_ac','V_ac')),
 # '2D SQUID n0p0 vs bias field',['Trace_retrace','n0 index','p0 index','Field index', 'n0', 'p0','Bottom gate value','Top gate value', 'By', 'Bz', 'Bias'],['SQUID_x','SQUID_y','I_x','V_x']
 '2D SQUID n0p0 vs bias field':(0, "C", (1,4,'n0'), (2,5,'p0'), (3,8,'By'), (6,7,9,10,11,12,13,14), ('Vb', 'Vt', 'Bz', 'Bias', 'SQUID_x', 'SQUID_y', 'I_x', 'V_x')),
+# "2D SQUID Cap n0p0 - Sweep no RT", ("n0 index", "p0 index", 'n0', 'p0', cfg[measurement]['v1'], cfg[measurement]['v2']),('SQUID_x','SQUID_y','Cs', 'Ds', 'X', 'Y')
+"2D SQUID Cap n0p0 sweep no RT":(-1,"C",(0,2,'n0'), (1,3,'p0'), (4,5,6,7,8,9,10,11), ('Vs', 'Vb', 'SQUID_x', 'SQUID_y', 'Cs', 'Ds', 'X', 'Y'))
 }
 
 def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
