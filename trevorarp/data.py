@@ -62,7 +62,7 @@ nSOTColumnSpec = {
 
 def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilename=False):
     '''
-    A function to retreive data from the datavault using a nanosquid identifier and return is as numpy arrays
+    A function to retrieve data from the datavault using a nanosquid identifier and return is as numpy arrays
 
     Args:
         identifier (str): The specific
@@ -130,7 +130,7 @@ def retrievefromvault(vaultdir, filename, host='localhost', password='pass'):
     A generic tool to retrieve files from a LabRAD datavault
 
     Args:
-        vaultdir (str) : The sub directory of the vault ot find the files in (neglecting the .dir extension)
+        vaultdir (str) : The subdirectory of the vault ot find the files in (neglecting the .dir extension)
         filename (str) : The name of the file, neglecting the leading numbers or file extenstion, for
             example "data1" for the file "00001 - data1.hdf" if there are files with the same name but
             different numbers it will always retreive the first instance.

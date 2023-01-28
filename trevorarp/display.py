@@ -53,9 +53,9 @@ class figure_inches():
     def __init__(self, name=None, xinches="1", yinches="1", defaults=None, style='notes', dark=False):
         self.defaults = {
         'xinches':5.0,
-        'yinches':5.0,
+        'yinches':4.8,
         'xmargin':0.8,
-        'ymargin':0.65,
+        'ymargin':0.55,
         'height':3.5,
         'width':4.0,
         'xint':0.8,
@@ -72,7 +72,7 @@ class figure_inches():
                 self.Nx = int(xinches)
             except:
                 raise ValueError("Invalid str to specify number of default figures.")
-            self.xinches = self.defaults['xinches'] + (self.Nx-1)*(self.defaults['width']+self.defaults['xint']-0.5)
+            self.xinches = self.defaults['xinches'] + (self.Nx-1)*(self.defaults['width']+self.defaults['xint'])
             self.default_xstart = self.defaults['xmargin']
         else:
             self.Nx = 0
@@ -114,6 +114,34 @@ class figure_inches():
 
         self.fig = plt.figure(self.name, figsize=(self.xinches, self.yinches), facecolor=facecolor)
     # end init
+
+    def stamp(self, iden, fontsize=10, wrapnum=None, xpos=0.05, ypos=0.05):
+        '''
+        Put a identifier (or list of identifiers) in the top left of the figure
+        Args:
+            iden (str or list): the Identifier(s) to display. If is a list will display each in series.
+            fontsize (int) : The font size
+            wrapnum (int) : The number of entries in a list to wrap back on. Automatically determined if None
+            xpos (float) : position in inches of left side of text
+            ypos (float) : position in inches of top of text
+        '''
+        if wrapnum is None:
+            wrapnum = 3*self.Nx
+        if isinstance(iden, str):
+            s = iden
+        elif isinstance(iden, list):
+            s = ''
+            for i in range(len(iden)):
+                s += iden[i]
+                if i != len(iden) - 1:
+                    s = s + ", "
+                if (i+1) % wrapnum == 0 and i != len(iden)-1:
+                    s += "\n"
+        else:
+            print("Warning figure_axes.stamp, unknown identifier type")
+            s = str(iden)
+        plt.figtext(xpos/self.xinches, (self.yinches - ypos)/self.yinches, s, fontsize=fontsize, ha='left', va='top')
+    #
 
     def get_fig(self):
         '''

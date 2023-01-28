@@ -28,6 +28,19 @@ def lowpass(data, cutoff=0.05, samprate=1.0):
     return filtfilt(b,a,data)
 # end lowpass
 
+def lowpasspx(data, Npixels=50):
+    '''
+    A lowpass for data that is definied by the time/time_constant, meaning it is at the full limit of singal
+    to noise and you only need to filter out the pixel to pixel variation.
+
+    Args:
+        data : The data to pass to the processing.lowpass function
+        Npixels : The number of pixels to define the frequency. cutoff = Npixels/len(data)
+    '''
+    N = len(data)
+    return lowpass(data, Npixels / N)
+#
+
 def notchfilter(data, frequency, Q=2.0, samplefreq=1.0):
     '''
     A notch filter to remove a specific frequency from a signal.
