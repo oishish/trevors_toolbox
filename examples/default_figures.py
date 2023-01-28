@@ -9,6 +9,7 @@ ax3 = fi.make_axes()
 ax4 = fi.make_axes()
 
 plt.suptitle("Default Figures Format")
+fi.stamp("unique identifier(s)")
 
 # Random test data
 np.random.seed(42)

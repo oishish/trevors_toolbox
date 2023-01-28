@@ -27,7 +27,7 @@ xint = 0.75
 ax1 = fi.make_axes([xmargin, ymargin, width, height])
 ax2, ax2cb = fi.make_img_axes([xmargin+xint+width, ymargin, height, height])
 
-plt.suptitle("Notes Format")
+fi.stamp(iden)
 
 # ax1.plot(data1)
 for i in range(3):
