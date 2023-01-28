@@ -397,7 +397,7 @@ class figure_inches():
         return axl, axr, axb, axt
     # make_dualx_axes
 
-    def figtext(xcoord, ycoord, *args, **kwargs):
+    def figtext(self, xcoord, ycoord, *args, **kwargs):
         '''
         Wrapper for plt.figtext, takes same arguments except in units of inches, and converts then to figure units
 
@@ -432,7 +432,7 @@ def interactive_image(fig, ax, X, Y, data):
             xix = np.searchsorted(X,event.xdata)
             yix = np.searchsorted(Y,event.ydata)
             print('x=%f, y=%f, z=%f'%(event.xdata, event.ydata, data[yix, xix]))
-    cid = fig.canvas.mpl_connect('button_press_event', onclick)
+    fig.canvas.mpl_connect('button_press_event', onclick)
 #
 
 def yaxis_right(ax):
@@ -622,7 +622,7 @@ def make_colorbar(ax, cmap, cnorm, orientation='vertical', ticks=None, ticklabel
         orientation = "horizontal"
         xtop = True
     else:
-        top = False
+        xtop = False
     if ticks is None:
         vmin = cnorm.vmin
         vmax = cnorm.vmax
