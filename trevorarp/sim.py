@@ -56,12 +56,12 @@ def multiprocess2D(func, args_array, ncores=4, display=True):
     Args:
         func : The function to evaluate, can only accept one argument but it can be a list
             or tuple
-        args_array is the array of arguments to the input function $func.
+        args_array is the 2D array of arguments to the input function $func.
         ncores : The number of nodes to pass to multiprocessing.Pool
         display : Will display progress if true.
 
     Returns:
-        Returns the results of the calculation as a numpy ndarray.
+        Returns the results of the calculation as a 2D numpy ndarray.
     '''
     pool = Pool(processes=ncores)
     rows = len(args_array)
