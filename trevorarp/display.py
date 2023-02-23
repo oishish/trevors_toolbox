@@ -17,7 +17,6 @@ import matplotlib.cm as cm
 from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
 
-import addcopyfighandler
 from datetime import datetime
 
 import numpy as np
