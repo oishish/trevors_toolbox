@@ -149,6 +149,63 @@ def retrievefromvault(vaultdir, filename, host='localhost', password='pass'):
     return np.array(dv.get())
 #
 
+def retrievefromvault2(vaultdir, filenumber, host='localhost', password='pass'):
+    '''
+    A generic tool to retrieve files from a LabRAD datavault -- v2 beefed by Owen for general use
+
+    Args:
+        vaultdir (str) : The subdirectory of the vault ot find the files in (neglecting the .dir extension)
+        filename (int) : The number of the file, neglecting the later identification, for
+            example int(1) for the file "00001 - data1.hdf" if there are files with the same name but
+            different numbers it will always retreive the first instance.
+        host (str) : The host for the labrad connection, localhost by default.
+        password (str) : The password for the labrad connection, localhost password by default.
+        
+    Returns:
+        data (np.array()): data from given file
+        iden (str): identification of the given file
+    '''
+    dv = labrad.connect('localhost', password='pass').data_vault
+    for dir in vaultdir.split('\\'):
+        dv.cd(dir)
+    rt, fls = dv.dir()
+    iden = '';
+    for fl in fls:
+        if int(fl.split(' - ',1)[0]) == filenumber:
+            datafile = fl
+            iden = fl.split(' - ',1)[1]
+            break
+    dv.open(datafile)
+    return np.array(dv.get()), iden
+
+def retrievefilefromvault(vaultdir, filenumber, host='localhost', password='pass'):
+    '''
+    A generic tool to retrieve files from a LabRAD datavault -- v2 beefed by Owen for general use
+
+    Args:
+        vaultdir (str) : The subdirectory of the vault ot find the files in (neglecting the .dir extension)
+        filename (int) : The number of the file, neglecting the later identification, for
+            example int(1) for the file "00001 - data1.hdf" if there are files with the same name but
+            different numbers it will always retreive the first instance.
+        host (str) : The host for the labrad connection, localhost by default.
+        password (str) : The password for the labrad connection, localhost password by default.
+        
+    Returns:
+        datavault object with the file opened
+    '''
+    dv = labrad.connect('localhost', password='pass').data_vault
+    for dir in vaultdir.split('\\'):
+        dv.cd(dir)
+    rt, fls = dv.dir()
+    iden = '';
+    for fl in fls:
+        if int(fl.split(' - ',1)[0]) == filenumber:
+            datafile = fl
+            iden = fl.split(' - ',1)[1]
+            break
+    dv.open(datafile)
+    return dv
+
 def datavault2numpy(filename):
     '''
     A tool to convert a datavault hdf5 file into python numpy
