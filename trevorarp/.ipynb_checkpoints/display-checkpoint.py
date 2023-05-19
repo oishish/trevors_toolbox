@@ -197,7 +197,7 @@ class figure_inches():
         return plt.axes([spec[0]/self.xinches, spec[1]/self.yinches, spec[2]/self.xinches, spec[3]/self.yinches], zorder=zorder, projection='3d')
     # make_3daxes
 
-    def make_img_axes(self, spec=None, cbpercent=0.5, zorder=1):
+    def make_img_axes(self, spec=None, cbpercent=0.5, zorder=1, cbheightpercent=0.2, cbmargin=0):
         '''
         Makes and returns a matplotlib Axes object with a default colorbar.
         To easily make a colorbar in the title area.
@@ -208,6 +208,8 @@ class figure_inches():
                 on top of axes with a lower zorder.
             cbpercent (float): The percentage of the width of the axes that the colorbar should use to define
                 it's width, i.e. cbwidth = cbpercent*width.
+            cbheightpercent (float): The percentage of the height of the axes that the colorbar should use to define
+                it's height, i.e. cbheight = cbheightpercent*height.
         '''
         if spec is None:
             self.default_figs_x += 1
@@ -228,11 +230,50 @@ class figure_inches():
 
         margin = 0.1/self.yinches #min([0.1*height]
         cbwidth = cbpercent*width
-        cbheight = 0.2/self.yinches
-        cb = plt.axes([xpos+width-cbwidth, ypos+height+margin, cbwidth, cbheight], zorder=zorder)
+        cbheight = cbheightpercent*height
+        cb = plt.axes([xpos+width-cbwidth-cbmargin, ypos+height+margin, cbwidth, cbheight], zorder=zorder)
         xaxis_top(cb)
         cb.__display_default_flag__ = True
         return ax, cb
+    # make_axes_and_cb
+    
+    def make_colorbar_axes(self, spec=None, cbpercent=0.5, zorder=1, cbheightpercent=0.2, cbmargin=0):
+        '''
+        Makes and returns a default colorbar.
+        To easily make a colorbar in the title area -- combined with another type of plot
+
+        Args:
+            spec : A list of the dimensions of the axis [left, bottom, width, height] in inches
+            zorder (int, optional) : The "z-axis" order of the axis, Axes with a higher zorder will appear
+                on top of axes with a lower zorder.
+            cbpercent (float): The percentage of the width of the axes that the colorbar should use to define
+                it's width, i.e. cbwidth = cbpercent*width.
+            cbheightpercent (float): The percentage of the height of the axes that the colorbar should use to define
+                it's height, i.e. cbheight = cbheightpercent*height.
+        '''
+        if spec is None:
+            self.default_figs_x += 1
+            spec = [self.default_xstart, self.default_ystart, self.defaults['height'], self.defaults['height']]
+            self.default_xstart = self.default_xstart + self.defaults['height'] + self.defaults['xint']
+            if self.default_figs_x >= self.Nx:
+                self.default_figs_x = 0
+                self.default_xstart = self.defaults['xint']
+                self.default_ystart = self.default_ystart - self.defaults['height'] - self.defaults['yint']
+        elif len(spec) == 2:
+            spec = [spec[0], spec[1], self.defaults['height'], self.defaults['height']]
+        plt.figure(self.name)
+        xpos = spec[0]/self.xinches
+        ypos = spec[1]/self.yinches
+        width = spec[2]/self.xinches
+        height = spec[3]/self.yinches
+
+        margin = 0.1/self.yinches #min([0.1*height]
+        cbwidth = cbpercent*width
+        cbheight = cbheightpercent*height
+        cb = plt.axes([xpos+width-cbwidth-cbmargin, ypos+height+margin, cbwidth, cbheight], zorder=zorder)
+        yaxis_right(cb)
+        cb.__display_default_flag__ = True
+        return cb
     # make_axes_and_cb
 
     def make_dualy_axes(self, spec=None, color_left='k', color_right='k', zorder=1, lefthigher=True):
