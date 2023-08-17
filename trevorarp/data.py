@@ -96,7 +96,7 @@ def get_dv_data(identifier, remote=None, subfolder=None, params=False, retfilena
     # Java can't handel large datasets (what a wimp)
     # Cant do : data = np.array(dv.get())
     # Instead we load directly
-    reg = cxn.registry
+    reg = cxn.registry()
     reg.cd(['', 'Servers', 'Data Vault', 'Repository'])
     vault = reg.get('__default__')
     subfile = dv.cd()
@@ -176,7 +176,9 @@ def retrievefromvault2(vaultdir, filenumber, host='localhost', password='pass'):
             iden = fl.split(' - ',1)[1]
             break
     dv.open(datafile)
-    return np.array(dv.get()), iden
+    data, params = np.array(dv.get()), dv.parameters()
+    
+    return data, params
 
 def retrievefilefromvault(vaultdir, filenumber, host='localhost', password='pass'):
     '''
